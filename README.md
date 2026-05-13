@@ -1,15 +1,42 @@
-# CodeScope
+<h1 align="center">
+  <img src="composeApp/src/jvmMain/resources/icons/icon.png" alt="CodeScope" width="96" /><br/>
+  CodeScope
+</h1>
+
+<p align="center">
+  AI-assisted source-code review for university courses — Kotlin Multiplatform (Android + Desktop), Firebase, Google Gemini.
+</p>
+
+<p align="center">
+  <a href="https://github.com/mhelikopter/codescope/actions/workflows/ci.yml"><img src="https://github.com/mhelikopter/codescope/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF.svg" alt="Kotlin Multiplatform">
+  <img src="https://img.shields.io/badge/UI-Compose%20Multiplatform-4285F4.svg" alt="Compose Multiplatform">
+</p>
 
 CodeScope is a Kotlin Multiplatform desktop and Android application that helps university courses automate code review. Lecturers define **criteria catalogs** (sets of grading questions and weights), students upload their source code as a ZIP archive, and a Firebase Cloud Function dispatches the code to **Google Gemini** to produce structured, criterion-by-criterion feedback. Lecturers can review, override, and finalize the results. The project was originally built as a four-person group assignment at TH Köln (Cologne University of Applied Sciences); this repository is a public fork prepared for portfolio purposes.
 
-[![CI](https://github.com/mhelikopter/codescope/actions/workflows/ci.yml/badge.svg)](https://github.com/mhelikopter/codescope/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF.svg)
-![Compose Multiplatform](https://img.shields.io/badge/UI-Compose%20Multiplatform-4285F4.svg)
+> **Note on UI language:** the application UI is in **German** because it was built for a German-language course. Screenshots reflect that; the engineering documentation and source comments are in English.
 
 ## Screenshots
 
-<!-- TODO: add screenshots — desktop dashboard, criteria catalog editor, analysis result view, Android dashboard -->
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/01-desktop-login.png" alt="Sign-in screen with Google OAuth on Desktop"><br/><sub><b>Sign-in</b> (Desktop) — Google OAuth via local loopback flow.</sub></td>
+    <td width="50%"><img src="docs/screenshots/02-lecturer-dashboard.png" alt="Lecturer dashboard"><br/><sub><b>Lecturer dashboard</b> — courses, students, latest analyses at a glance.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/03-project-upload.png" alt="Project upload — Local ZIP, Git, or Drive"><br/><sub><b>Project upload</b> — three sources: local ZIP, Git repository, or Google Drive.</sub></td>
+    <td width="50%"><img src="docs/screenshots/04-analysis-config.png" alt="Analysis configuration with model selection"><br/><sub><b>Analysis configuration</b> — pick the criteria catalog and Gemini model.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/05-analysis-result.png" alt="Analysis result with per-criterion scores"><br/><sub><b>Analysis result</b> — weighted overall score plus per-criterion feedback.</sub></td>
+    <td width="50%"><img src="docs/screenshots/06-criteria-library.png" alt="Criteria catalog library"><br/><sub><b>Criteria library</b> — lecturers manage reusable grading catalogs.</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="docs/screenshots/07-android-login.png" alt="Android sign-in screen" width="320"><br/><sub><b>Android</b> — same authentication flow, native mobile build.</sub></td>
+  </tr>
+</table>
 
 ## Features
 
