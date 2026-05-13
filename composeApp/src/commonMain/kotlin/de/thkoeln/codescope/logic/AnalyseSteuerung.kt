@@ -40,13 +40,26 @@ class AnalyseSteuerung(
             return Result.failure(IllegalStateException("Analysis is already running for this project"))
         }
 
+        // Flip status to ANALYSIS_RUNNING before contacting the backend. The
+        // backend call is synchronous (the Cloud Function blocks until Gemini
+        // returns), so doing this *after* would leave the project incorrectly
+        // marked as running once the analysis was already finished. Setting it
+        // beforehand also prevents a concurrent caller from kicking off a
+        // duplicate analysis on the same project.
+        val runningProject = project.copy(status = ProjectStatus.ANALYSIS_RUNNING)
+        projektVerwaltung.save(runningProject).getOrElse {
+            return Result.failure(IllegalStateException("Failed to mark project as running", it))
+        }
+
         val analysisIdResult = restClient.requestAnalysis(projectId, catalogId, model, courseId)
-        val analysisId = analysisIdResult.getOrElse { return Result.failure(IllegalStateException("Failed to start analysis in backend", it)) }
-
-        val updatedProject = project.copy(status = ProjectStatus.ANALYSIS_RUNNING)
-        projektVerwaltung.save(updatedProject)
-
-        return Result.success(analysisId)
+        return analysisIdResult.fold(
+            onSuccess = { Result.success(it) },
+            onFailure = { error ->
+                // Roll the status back so the user can retry.
+                projektVerwaltung.save(project)
+                Result.failure(IllegalStateException("Failed to start analysis in backend", error))
+            }
+        )
     }
 
     override suspend fun getAnalysisResult(analysisId: String): Result<AnalysisResult> {
@@ -152,7 +165,22 @@ class AnalyseSteuerung(
         instructorComment: String?
     ): Result<AnalysisResult> {
         val analysis = analyseVerwaltung.loadAnalysis(analysisId).getOrElse { return Result.failure(it) }
-        
+
+        // Authorize: either the analysis owner (self-update) or the lecturer
+        // of the course this analysis is linked to (review). Without this check
+        // the parameter was effectively decorative — any caller could pass any
+        // id and revise any analysis.
+        val isOwner = analysis.userId == instructorId
+        val isLecturerOfCourse = analysis.courseId?.let { courseId ->
+            kursVerwaltung.findById(courseId).getOrNull()?.lecturerId == instructorId
+        } ?: false
+
+        if (!isOwner && !isLecturerOfCourse) {
+            return Result.failure(
+                IllegalAccessException("Only the analysis owner or the course lecturer may update this analysis")
+            )
+        }
+
         val updated = analysis.copy(
             status = newStatus,
             score = newScore,

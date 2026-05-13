@@ -179,9 +179,8 @@ class ProjektSteuerung(
      * @param project a valid [Project]
      * @return A [Result] which shows whether or not deleting the [Project] was successful
      */
-    override suspend fun deleteProject(project: Project): Result<Unit> = runCatching {
-        return projektVerwaltung.deleteProject(project)
-    }
+    override suspend fun deleteProject(project: Project): Result<Unit> =
+        projektVerwaltung.deleteProject(project)
 
     /**
      * Updates a project in the database overwriting any fields that are different from that in the
@@ -295,7 +294,6 @@ class ProjektSteuerung(
      * @param projectId a String that references an existing project in the database
      * @return a [Project] matching the given id
      */
-    override suspend fun getProjektById(projectId: String): Result<Project> = runCatching {
-        return projektVerwaltung.findById(projectId)
-    }
+    override suspend fun getProjektById(projectId: String): Result<Project> =
+        projektVerwaltung.findById(projectId)
 }

@@ -203,7 +203,7 @@ class ProjectUploadViewModel(
         }
     }
 
-    private fun deleteProject(project: Project) {
+    private fun deleteProject(project: Project, userId: String) {
         viewModelScope.launch {
             val result = projektSteuerung.deleteProject(project)
 
@@ -213,16 +213,19 @@ class ProjectUploadViewModel(
                 }
                 .onSuccess {
                     successMessage = "Projekt erfolgreich gelöscht"
+                    // Refresh the list only *after* the deletion has actually
+                    // resolved — otherwise the reload races the delete and the
+                    // just-deleted project flickers back into the UI.
+                    loadProjects(userId)
                 }
         }
     }
 
     fun confirmDeletion(userId: String) {
         itemToDelete?.let { item ->
-            deleteProject(itemToDelete!!)
+            deleteProject(item, userId)
         }
         dismissDeleteDialog()
-        loadProjects(userId)
     }
 
     fun dismissDeleteDialog(){
