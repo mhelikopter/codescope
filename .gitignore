@@ -31,6 +31,11 @@ ui-debug.log*
 *~
 .vscode/
 
+# Claude Code: ignore runtime locks and personal overrides,
+# but allow tracking a shared .claude/settings.json if ever added.
+.claude/*.lock
+.claude/settings.local.json
+
 # Functions build output
 functions/lib/
 
