@@ -1,0 +1,185 @@
+[[sec:verteilung]]
+= [[sec:verteilung]] Verteilung
+
+== [[sec:buildartefakte]] Artefakte
+
+Die CodeScope-Anwendung besteht aus mehreren Deployment-Artefakten, die auf unterschiedlichen Plattformen ausgeführt werden. Das folgende UML-Verteilungsdiagramm zeigt die Zusammenhänge zwischen Artefakten und Komponenten:
+
+[plantuml, artefakte-diagramm, svg]
+----
+@startuml
+artifact "CodeScope_Android.apk" <<Android Package>> {
+  component "AndroidAppUI"
+  component "SharedModule" as SM_Android
+}
+
+artifact "CodeScope_Desktop.jar" <<Executable JAR>> {
+  component "DesktopAppUI"
+  component "SharedModule" as SM_Desktop
+}
+
+artifact "CloudFunctions.zip" <<Node.js Bundle>> {
+  component "AnalyseBackend"
+  component "KI-Integration"
+  component "StorageTriggers"
+}
+
+artifact "google-services.json" <<Configuration>> {
+}
+
+artifact "kriterienkataloge/*.txt" <<Data Files>> {
+}
+
+"CodeScope_Android.apk" ..> "google-services.json" : nutzt
+"CloudFunctions.zip" ..> "google-services.json" : nutzt Projektkonfiguration
+@enduml
+----
+
+=== Beschreibung der Artefakte
+
+==== CodeScope_Android.apk
+* *Typ:* Android Package (APK/AAB)
+* *Enthaltene Komponenten:* AndroidAppUI, SharedUI, alle Logic-Komponenten (AnalyseSteuerung, ProjektSteuerung, etc.), alle Data-Komponenten (CRUD-Verwaltungen), alle Client-Komponenten (FirestoreClient, RestClient, AuthProvider)
+* *Größe:* ca. 15–25 MB
+* *Verteilung:* Google Play Store oder manueller Download
+* *Zielplattform:* Android 8.0+ (API Level 26+)
+* *Format:* APK (Development) oder AAB (Production)
+
+==== CodeScope_Desktop.jar
+* *Typ:* Executable Fat JAR
+* *Enthaltene Komponenten:* DesktopAppUI, SharedUI, alle Logic-Komponenten, alle Data-Komponenten, alle Client-Komponenten
+* *Größe:* ca. 50–80 MB (inkl. JVM-Abhängigkeiten)
+* *Verteilung:* Download-Link oder Installationspaket
+* *Zielplattform:* Windows 10/11 (64-bit)
+* *Format:* JAR mit eingebetteter JVM oder natives Windows-Executable (.exe)
+
+==== CloudFunctions.zip
+* *Typ:* Serverless Cloud Functions Bundle
+* *Enthaltene Komponenten:*
+** `/analyseCode` – Callable Cloud Function für Einzelanalysen
+*** Funktion: Authentifizierungsprüfung, Laden des Projekt-ZIPs aus dem Storage, In-Memory-Entpacken, Dateifilterung, Prompt-Engineering, Kommunikation mit Google Gemini, Persistierung der Ergebnisse in Firestore
+** `/batchAnalyze` – HTTP-Endpunkt für Batch-Analysen
+** `Gemini Integration` – Nutzung des `@google/generative-ai` SDKs
+* *Größe:* ca. 5–10 MB
+* *Verteilung:* Firebase CLI Deployment
+* *Zielplattform:* Google Cloud Platform (Node.js 20 Runtime)
+* *Format:* ZIP-Archiv mit Node.js-Code und `package.json`
+
+==== google-services.json
+* *Typ:* Konfigurationsdatei
+* *Inhalt:* Firebase-Projektkonfiguration (API-Keys, Project-ID, Storage-Buckets)
+* *Größe:* ca. 2–5 KB
+* *Verteilung:* Wird während der Build-Zeit fest in die Android-App eingebunden
+* *Format:* JSON
+
+==== kriterienkataloge/*.txt
+* *Typ:* Logische Definition / Parameter
+* *Inhalt:* Vordefinierte Kriterienkataloge (z. B. „SE-Praktikum“, „Code-Review-Standards“)
+* *Speicherort:* Firebase Storage unter `/catalogs`
+* *Format:* Plain Text (UTF-8)
+
+== [[sec:datenverteilung]] Daten-Verteilung
+
+Die persistenten Daten des CodeScope-Systems werden auf verschiedene logische Datenspeicher verteilt. Die folgende Tabelle zeigt, welche Datenentitäten wo führend gespeichert werden:
+
+[cols="2,3,2,3", options="header"]
+|===
+|Datenentität |Datenspeicher |Technologie |Anmerkungen
+
+|*User* (/LD04/)
+|Firebase Authentication + Firestore Collection `users`
+|Firebase Auth, NoSQL
+|Auth: Credentials & Tokens; Firestore: Profile & Rollen
+
+|*Course* (/LD05/)
+|Firestore Collection `courses`
+|NoSQL (Firestore)
+|Dokument-ID = Kurs-ID
+
+|*Project* (/LD01/)
+|Firestore Collection `projects` + Firebase Storage
+|NoSQL + Blob Storage
+|Metadaten in Firestore, ZIP in `/uploads/{userId}/{projectId}/`
+
+|*CriteriaCatalog* (/LD02/)
+|Firestore Collection `catalogs` + Firebase Storage
+|NoSQL + Blob Storage
+|Metadaten + `.txt`-Dateien
+
+|*AnalysisResult* (/LD03/)
+|Firestore Collection `analysis`
+|NoSQL (Firestore)
+|Score, Feedback, Status
+
+|*Session-Daten*
+|Client-seitig
+|In-Memory
+|Nicht persistent
+
+|*Logs*
+|Firebase Cloud Logging
+|Cloud Logging
+|Serverlogs & Fehlerberichte
+
+|*API-Keys*
+|Cloud Functions Env Vars
+|Secrets Manager
+|Nie clientseitig exponiert
+|===
+
+=== Datenfluss
+
+. *Upload:* Client → Firebase Storage → Cloud Function
+. *Analyse:* Cloud Function → Google Gemini API → Firestore
+. *Abruf:* Client → Firestore (Realtime Listener) → UI
+
+=== Datenkonsistenz
+
+* *Firestore:* Starke Konsistenz bei Dokumenten
+* *Storage:* Eventually Consistent
+* *Synchronisierung:* Realtime Listener
+
+== [[sec:deployment]] Deployment
+
+Das folgende UML-Verteilungsdiagramm zeigt die physische Verteilung des CodeScope-Systems in der Produktivumgebung:
+
+[plantuml, deployment-diagramm, svg]
+----
+@startuml
+node "Android-Gerät" <<Mobile Device>> {
+  node "Android OS 8+" {
+    artifact "CodeScope_Android.apk"
+  }
+}
+
+node "Windows Desktop" <<PC>> {
+  node "Windows 10/11" {
+    node "JVM 17+" {
+      artifact "CodeScope_Desktop.jar"
+    }
+  }
+}
+
+cloud "Google Cloud Platform" {
+  node "Firebase Authentication"
+  node "Firebase Firestore"
+  node "Firebase Storage"
+  node "Cloud Functions"
+  node "Google Gemini API"
+}
+
+"CodeScope_Android.apk" --> "Firebase Authentication"
+"CodeScope_Android.apk" --> "Firebase Firestore"
+"CodeScope_Android.apk" --> "Firebase Storage"
+"CodeScope_Android.apk" --> "Cloud Functions"
+
+"CodeScope_Desktop.jar" --> "Firebase Authentication"
+"CodeScope_Desktop.jar" --> "Firebase Firestore"
+"CodeScope_Desktop.jar" --> "Firebase Storage"
+"CodeScope_Desktop.jar" --> "Cloud Functions"
+
+"Cloud Functions" --> "Firebase Firestore"
+"Cloud Functions" --> "Firebase Storage"
+"Cloud Functions" --> "Google Gemini API"
+@enduml
+----

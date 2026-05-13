@@ -1,0 +1,70 @@
+[[sec:randbedingungen]]
+= [[sec:randbedingungen]] Randbedingungen
+
+[[sec:LC01]]
+== [[sec:LC01]] /LC01/ Nutzung externer KI-API (Gemini)
+Das System nutzt die Gemini-API von Google zur Durchführung der Codeanalyse. Die API stellt
+einen externen Dienst dar und kann von den Entwicklern nicht beeinflusst werden. Änderungen,
+Einschränkungen oder Downtimes der API müssen vom System durch geeignete Fehlermeldungen
+oder Statusanzeigen abgefangen werden.
+
+[[sec:LC02]]
+== [[sec:LC02]] /LC02/ Verwendung von Google Firebase
+Die Authentifizierung (Google Login), Datenspeicherung und Synchronisierung erfolgen über
+Google Firebase. Es gelten die Sicherheits- und Datenschutzrichtlinien der Google Cloud
+Platform. Eine stabile Internetverbindung ist Voraussetzung für die Nutzung der
+Cloud-Funktionen.
+
+[[sec:LC03]]
+== [[sec:LC03]] /LC03/ Kotlin Multiplatform (KMP) Architektur
+Die Anwendung wird mit Kotlin Multiplatform entwickelt. Dabei wird eine gemeinsame
+Codebasis für Geschäftslogik und Datenverwaltung genutzt, während die Benutzeroberflächen
+mit Compose Multiplatform umgesetzt werden. Änderungen an der Plattformarchitektur müssen
+die Kompatibilität mit Desktop- und Android-Zielplattformen sicherstellen.
+
+[[sec:LC04]]
+== [[sec:LC04]] /LC04/ Entwicklungsumgebung
+Als Entwicklungsumgebung wird Android Studio verwendet. Dieses bietet integrierte
+Unterstützung für Kotlin-Multiplatform-Projekte sowie einen Android-Emulator für die mobile
+Anwendung. Es wird eine einheitliche Projektkonfiguration verwendet, um Build-Probleme zu
+vermeiden.
+
+[[sec:LC05]]
+== [[sec:LC05]] /LC05/ Dokumentation im GitLab-Wiki
+Die Projektdokumentation wird ausschließlich über das GitLab-Wiki gepflegt. Änderungen an
+AsciiDoc-Dateien erfolgen über lokale Edits im geklonten Wiki-Repository und werden
+anschließend versioniert und gepusht. Für Diagramme wird PlantUML verwendet.
+
+[[sec:LC06]]
+== [[sec:LC06]] /LC06/ Datenschutz und Zugriffskontrolle
+Personenbezogene Nutzerdaten (z. B. Google-Konten, E-Mail-Adressen) dürfen ausschließlich im
+Rahmen der Authentifizierung und Nutzung der Anwendung verarbeitet werden. Hochgeladener
+Quellcode wird für Analyse- und Nachvollziehbarkeitszwecke gespeichert und kann vom Nutzer
+jederzeit manuell gelöscht werden.
+
+[[sec:LC07]]
+== [[sec:LC07]] /LC07/ API-Schlüssel-Management
+Alle API-Schlüssel (z. B. Firebase, Gemini) dürfen nicht im Code-Repository hinterlegt
+werden. Sie werden über lokale Konfigurationsdateien oder CI-/CD-Umgebungsvariablen
+verwaltet. Clients greifen ausschließlich über Firebase Cloud Functions auf externe APIs zu
+und benötigen selbst keine direkten API-Schlüssel für die KI-Anbindung.
+
+[[sec:LC08]]
+== [[sec:LC08]] /LC08/ Build-Management
+Das Projekt wird über Gradle verwaltet. Abhängigkeiten werden zentral in den relevanten
+Gradle-Konfigurationsdateien definiert, um plattformübergreifende Konsistenz sicherzustellen.
+Build-Vorgänge müssen reproduzierbar sein, wobei alle Teammitglieder denselben Gradle
+Wrapper verwenden.
+
+[[sec:LC09]]
+== [[sec:LC09]] /LC09/ Speicherung von Quellcode
+Hochgeladener Quellcode darf nur so lange gespeichert werden, wie dies für Analyse-,
+Bewertungs- oder Nachvollziehbarkeitszwecke erforderlich ist. Eine dauerhafte Speicherung
+personenbezogener oder projektbezogener Quellcodedaten ist nicht vorgesehen.
+
+[[sec:LC10]]
+== [[sec:LC10]] /LC10/ Wartung und Zukunftssicherheit
+Nach Abschluss des Projekts soll der Code modular, verständlich und ausreichend
+dokumentiert sein, sodass zukünftige Studierende das System übernehmen oder erweitern
+können. Anpassungen an KI-Anbindungen oder Kriterienkatalogen sollen ohne grundlegende
+Änderungen an der bestehenden Architektur möglich sein.

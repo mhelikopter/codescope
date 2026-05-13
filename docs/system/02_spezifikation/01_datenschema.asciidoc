@@ -1,0 +1,138 @@
+[[sec:datenschema]]
+= [[sec:datenschema]] Datenschema
+
+[plantuml, datenschema, svg]
+[[fig:datenschema]]
+.Datenschema
+----
+@startuml
+title Datenschema - CodeScope
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam class {
+  BackgroundColor #F9F9F9
+  BorderColor #444
+}
+
+skinparam ranksep 60
+skinparam nodesep 60
+
+'==========================
+' Klassen
+'==========================
+
+class User {
+  - id : String
+  - name : String
+  - email : String
+  - role : UserRole
+}
+
+enum UserRole {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+class Course {
+  - id : String
+  - name : String
+  - lecturerId : String
+  - memberIds : List<String>
+  - sharedCatalogIds : List<String>
+}
+
+class Project {
+  - id : String
+  - name : String
+  - ownerId : String
+  - sourceLocation : String
+  - status : ProjectStatus
+  - sizeBytes : Long
+}
+
+enum AiModel {
+  GEMINI_2_FLASH
+  GEMINI_25_FLASH
+  GEMINI_25_PRO
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  FINISHED
+  FAILED
+  REVIEWED
+}
+
+enum ProjectStatus {
+  UPLOADED
+  ANALYSIS_RUNNING
+}
+
+class CriteriaCatalog {
+  - id : String
+  - name : String
+  - ownerId : String
+  - sourceLocation : String
+  - lastUpdated : Long
+}
+
+class AnalysisResult {
+  - id : String
+  - userId : String
+  - projectId : String
+  - courseId : String? = null
+  - criteriaCatalogId : String
+  - model : String
+  - status : AnalysisStatus
+  - score : Int?
+  - feedback : List<FeedbackItem>?
+  - instructorComment : String? = null
+  - createdAt : Long
+  - updatedAt : Long
+}
+
+class FeedbackItem {
+  - criterion : String
+  - comment : String
+  - rating : Int
+}
+
+'==========================
+' Beziehungen (fachlich, NoSQL-gerecht)
+'==========================
+
+Project "0..*" --> "1" User : ownerId
+Course "0..*" --> "1" User : lecturerId
+CriteriaCatalog "0..*" --> "1" User : ownerId
+
+Course "0..*" --> "0..*" User : memberIds
+Course "0..*" -- "0..*" CriteriaCatalog : sharedCatalogIds
+
+Project "1" --> "0..*" AnalysisResult : projectId
+AnalysisResult "*" --> "1" CriteriaCatalog : criteriaCatalogId
+AnalysisResult "0..*" --> "1" User : userId
+
+AnalysisResult "1" *-- "0..*" FeedbackItem : feedback
+
+@enduml
+----
+
+Das obige UML-Klassendiagramm spezifiziert das konzeptionelle Datenschema für das CodeScope-System. Es detailliert die Entitäten, die in dem Kapitel <<sec:daten, 1.4 Daten>> identifiziert wurden. Gemäß <<sec:LC02, /LC02/>> werden alle persistenten Daten in der Google Cloud gespeichert. Das Datenschema ist auf die Anforderungen von Firebase (NoSQL) ausgelegt, weshalb alle IDs als `String` (UUIDs oder Firebase-IDs) und nicht als Inkrement-Integer (wie bei SQL) definiert sind.
+
+Die Zusammenhänge der Daten stellen sich wie folgt dar:
+
+* **User und UserRole:** Die zentrale Entität ist der **`User`** (<<sec:LD04, /LD04/>>), der über Firebase Authentication verwaltet wird. Jeder User besitzt genau eine **`UserRole`** (STUDENT, LECTURER, ADMIN), die seine Berechtigungen im System steuert (siehe <<sec:LF100, /LF100/>>).
+
+* **Kursverwaltung:** Ein `User` mit der Rolle `LECTURER` kann beliebig viele **`Courses`** (<<sec:LD05, /LD05/>>) leiten (<<sec:LF70, /LF70/>>). Studierende können `0..*` Kursen beitreten, was als N:M-Beziehung („ist Mitglied“) über `memberIds` modelliert ist (<<sec:LF71, /LF71/>>). Die in <<sec:akteure, Kapitel 1.2 Akteure>> beschriebene Vererbung von Rechten (z. B. „Dozent kann alles, was Student kann“) wird auf der Anwendungslogik-Ebene umgesetzt, nicht im Datenschema.
+
+* **CriteriaCatalog:** Ein **`CriteriaCatalog`** (<<sec:LF20, /LF20/>>) wird von einem `User` hochgeladen/verwaltet und kann über einen `Course` mit Studierenden geteilt werden (<<sec:LF22, /LF22/>>). Die Katalogdatei wird über `sourceLocation` referenziert.
+
+* **Projekte und Analysen (Entkopplung):** Ein `User` kann beliebig viele **`Projects`** (<<sec:LD01, /LD01/>>) besitzen. Ein `Project` ist ein Metadaten-Container, dessen `sourceLocation` auf die hochgeladene Codedatei (z. B. ZIP-Archiv) im Storage verweist.
+
+* **Nachvollziehbarkeit:** Ein `Project` kann mehrere **`AnalysisResult`** (<<sec:LD03, /LD03/>>) besitzen. Jedes `AnalysisResult` speichert:
+  1. Einen Verweis auf den verwendeten `CriteriaCatalog` (`criteriaCatalogId`).
+  2. Das verwendete KI-Modell als `model : String` (z. B. die Modell-ID aus `AiModel`, wie `"gemini-2.5-flash"`).
+  3. Den Analyse- und Freigabestatus als `AnalysisStatus` (inkl. `REVIEWED`) sowie optional einen Dozentenkommentar (`instructorComment`) (vgl. <<sec:LF90, /LF90/>>).

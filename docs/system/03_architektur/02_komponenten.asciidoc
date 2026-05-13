@@ -1,0 +1,357 @@
+[[sec:komponenten]]
+= [[sec:komponenten]] Komponenten
+
+////
+Komponente:
+Presentation Layer:
+Desktop Gui
+Android Gui
+Shared Gui
+
+Logic Layer:
+AnalyseSteuerung
+ProjektSteuerung
+AdminSteuerung
+KriterienkatalogSteuerung
+LoginSteuerung
+KISteuerung (Optional)
+StudentKursSteuerung (Optional)
+DozentKursSteuerung (Optional)
+ProjektStorage
+
+Data Access Layer:
+KursVerwaltung
+ProjektVerwaltung
+BenutzerVerwaltung
+KriterienKatalogVerwaltung
+AnalyseVerwaltung
+FirestoreClient
+RestClient
+AuthProvider
+////
+
+[plantuml]
+[[fig:komponentendiagramm]]
+-----
+left to right direction
+skinparam componentStyle rectangle
+
+package presentation {
+    component DesktopAppUI <<UI>>
+    component AndroidAppUI <<UI>>
+    component SharedUI <<UI>>
+    interface ISharedUI
+    SharedUI - ISharedUI
+}
+
+package logic {
+    component AnalyseSteuerung <<service>>
+    interface IAnalyseSteuerung
+    AnalyseSteuerung - IAnalyseSteuerung
+
+    component ProjektSteuerung <<service>>
+    interface IProjektSteuerung
+    ProjektSteuerung - IProjektSteuerung
+
+    component AdminSteuerung <<service>>
+    interface IAdminSteuerung
+    AdminSteuerung - IAdminSteuerung
+
+    component KriterienkatalogSteuerung <<service>>
+    interface IKriterienkatalogSteuerung
+    KriterienkatalogSteuerung - IKriterienkatalogSteuerung
+
+    component LoginSteuerung <<service>>
+    interface ILoginSteuerung
+    LoginSteuerung - ILoginSteuerung
+
+    component StudentKursSteuerung <<service>>
+    interface IStudentKursSteuerung
+    StudentKursSteuerung - IStudentKursSteuerung
+
+    component DozentKursSteuerung <<service>>
+    interface IDozentKursSteuerung
+    DozentKursSteuerung - IDozentKursSteuerung
+
+    component ProjektStorage <<service>>
+    interface IProjektStorage
+    ProjektStorage - IProjektStorage
+}
+
+package dataaccess {
+    component KursVerwaltung <<crud>>
+    interface IKursVerwaltung
+    KursVerwaltung - IKursVerwaltung
+
+    component ProjektVerwaltung <<crud>>
+    interface IProjektVerwaltung
+    ProjektVerwaltung - IProjektVerwaltung
+
+    component BenutzerVerwaltung <<crud>>
+    interface IBenutzerVerwaltung
+    BenutzerVerwaltung - IBenutzerVerwaltung
+
+    component KriterienKatalogVerwaltung <<crud>>
+    interface IKriterienKatalogVerwaltung
+    KriterienKatalogVerwaltung - IKriterienKatalogVerwaltung
+
+    component AnalyseVerwaltung <<crud>>
+    interface IAnalyseVerwaltung
+    AnalyseVerwaltung - IAnalyseVerwaltung
+
+    component FirestoreClient <<client>>
+    interface IFirestoreClient
+    FirestoreClient - IFirestoreClient
+
+    component RestClient <<client>>
+    interface IRestClient
+    RestClient - IRestClient
+
+    component AuthProvider <<client>>
+    interface IAuthProvider
+    AuthProvider - IAuthProvider
+}
+
+' Präsentation nutzt gemeinsame UI
+DesktopAppUI .> ISharedUI : uses
+AndroidAppUI .> ISharedUI : uses
+
+' SharedUI greift auf Logik-Services zu
+SharedUI .> IAnalyseSteuerung : uses
+SharedUI .> IProjektSteuerung : uses
+SharedUI .> IAdminSteuerung : uses
+SharedUI .> IKriterienkatalogSteuerung : uses
+SharedUI .> ILoginSteuerung : uses
+SharedUI .> IStudentKursSteuerung : uses
+SharedUI .> IDozentKursSteuerung : uses
+SharedUI .> IProjektStorage : uses
+
+' Service -> CRUD / Client Abhängigkeiten
+AnalyseSteuerung .> IAnalyseVerwaltung : uses
+ProjektSteuerung .> IProjektVerwaltung : uses
+AdminSteuerung .> IBenutzerVerwaltung : uses
+KriterienkatalogSteuerung .> IKriterienKatalogVerwaltung : uses
+LoginSteuerung .> IAuthProvider : uses
+LoginSteuerung .> IBenutzerVerwaltung : uses
+StudentKursSteuerung .> IKursVerwaltung : uses
+DozentKursSteuerung .> IKursVerwaltung : uses
+AnalyseVerwaltung .> IRestClient : uses
+
+' CRUD -> Firestore
+KursVerwaltung .> IFirestoreClient : uses
+ProjektVerwaltung .> IFirestoreClient : uses
+BenutzerVerwaltung .> IFirestoreClient : uses
+KriterienKatalogVerwaltung .> IFirestoreClient : uses
+AnalyseVerwaltung .> IFirestoreClient : uses
+
+' Layout/Hilfs-Verbindungen
+DesktopAppUI -[hidden]-> SharedUI
+SharedUI -[hidden]-> AndroidAppUI
+
+AnalyseSteuerung -[hidden]-> ProjektSteuerung
+ProjektSteuerung -[hidden]-> AdminSteuerung
+AdminSteuerung -[hidden]-> KriterienkatalogSteuerung
+
+StudentKursSteuerung -[hidden]-> DozentKursSteuerung
+
+KursVerwaltung -[hidden]-> ProjektVerwaltung
+ProjektVerwaltung -[hidden]-> BenutzerVerwaltung
+BenutzerVerwaltung -[hidden]-> KriterienKatalogVerwaltung
+AnalyseVerwaltung -[hidden]-> FirestoreClient
+FirestoreClient -[hidden]-> RestClient
+RestClient -[hidden]-> AuthProvider
+-----
+
+[[sec:serviceKomponenten]]
+== «service»-Komponenten
+Verantwortlichkeit::
+«service»-Komponenten sind für die interne Steuerung und Datenverarbeitung in der App zuständig. In diesen Komponenten wird das Steuerungsverhalten aller Anwendungsfälle (z. B. Analyse starten, Projekt hochladen) realisiert. Sie bilden den Kern der Geschäftslogik.
+Realisierung::
+«service»-Komponenten werden manuell in Kotlin Multiplatform implementiert. Alle «service»-Komponenten befinden sich im `shared`-Bereich der App, damit sie plattformunabhängig von Android und Desktop genutzt werden können. Sie greifen auf «crud»- und «client»-Komponenten zu.
+
+Zusätzliche Hinweise::
+* Schnittstellen sind für alle «service»-Komponenten definiert (z. B. `IAnalyseSteuerung`, `IProjektSteuerung`, `ILoginSteuerung`).
+* Optionale Komponenten sind explizit als optional gekennzeichnet.
+* Explizite Abhängigkeiten (uses) sind in den Komponentenbeschreibungen angegeben.
+
+[[sec:crudKomponenten]]
+== «crud»-Komponenten
+Verantwortlichkeit::
+«crud»-Komponenten kapseln den Zugriff auf die persistierten Daten. Sie definieren die Methoden, um Objekte (wie Projekte, Kurse, Benutzer) in der Firestore-Datenbank zu verwalten.
+Realisierung::
+«crud»-Komponenten werden manuell in Kotlin Multiplatform mithilfe des Google Firebase SDKs implementiert. Alle «crud»-Komponenten befinden sich im `shared`-Bereich der App, damit sie plattformunabhängig von Android und Desktop genutzt werden können.
+
+Zusätzliche Hinweise::
+* Jede «crud»-Komponente stellt eine Interface-Schnittstelle bereit (z. B. `IKursVerwaltung`, `IProjektVerwaltung`).
+* CRUD-Komponenten nutzen den technischen Firestore-Wrapper (`IFirestoreClient`) zur Persistenz.
+
+[[sec:clientKomponenten]]
+== «client»-Komponenten
+Verantwortlichkeit::
+«client»-Komponenten ermöglichen die Kommunikation mit externen Schnittstellen und Infrastruktur-Diensten wie Google Firestore, Firebase Authentication oder den Cloud Functions.
+Realisierung::
+Implementierung im `shared`-Modul mittels Firebase SDK und Kotlin Multiplatform. Sie abstrahieren die Netzwerkkommunikation und API-Details von der Geschäftslogik.
+
+Zusätzliche Hinweise::
+* Schnittstellen: `IFirestoreClient`, `IRestClient`, `IAuthProvider`.
+* Zweck: Kapselung plattformspezifischer SDKs (Firestore, Auth, HTTP). Nutzung z. B. `dev.gitlive:firebase-auth` für Auth.
+
+[[sec:uiKomponenten]]
+== «UI»-Komponenten
+Verantwortlichkeit::
+«UI»-Komponenten sind verantwortlich für die visuelle Darstellung der App und ermöglichen dem Nutzer, im Rahmen seiner Berechtigung, die Anwendung über die grafische Oberfläche zu steuern.
+
+== Komponente `DesktopAppUI`
+Archetyp:: «UI»
+Verantwortlichkeit::
+Darstellung und Interaktion für die Desktop-Benutzeroberfläche. Sie ermöglicht spezifische Desktop-Funktionen wie ZIP-Archive für den Upload.
+Realisierung::
+Implementiert als JVM-Anwendung. Sie instanziiert die `SharedUI` und stellt den Einstiegspunkt für die Desktop-Anwendung dar.
+Schnittstelle:: `ISharedUI`
+Benutzt:: `ISharedUI`
+
+== Komponente `AndroidAppUI`
+Archetyp:: «UI»
+Verantwortlichkeit::
+Darstellung und Interaktion für die Android-Benutzeroberfläche. Sie behandelt mobile Interaktionsmuster, Lifecycle-Events der App und Permissions.
+Realisierung::
+Implementierung als Android-App. Sie instanziiert die `SharedUI` und stellt den Einstiegspunkt für die Android-Anwendung dar.
+Schnittstelle:: `ISharedUI`
+Benutzt:: `ISharedUI`
+
+== Komponente `SharedUI`
+Archetyp:: «UI»
+Verantwortlichkeit::
+Bereitstellung der gemeinsamen UI-Logik, Screens (Dashboard, Login, Editor, Listen) und UI-Elemente (Buttons, Cards).
+Realisierung::
+Realisierung im `shared`-Modul mit Compose Multiplatform.
+Benutzt:: gesamte package `logic` (z. B. `IAnalyseSteuerung`, `IProjektSteuerung`, `ILoginSteuerung`, `IProjektStorage`)
+
+== Komponente `AnalyseSteuerung`
+Archetyp:: «service»
+Verantwortlichkeit::
+Koordination des gesamten Analyseprozesses. Sie steuert den Ablauf von der Auftragserteilung bis zum Empfang der Ergebnisse, inklusive Batch-Verarbeitung für mehrere Projekte.
+Schnittstelle:: `IAnalyseSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IAnalyseVerwaltung`, `IRestClient` (für externe Analyse-APIs)
+
+== Komponente `ProjektSteuerung`
+Archetyp:: «service»
+Verantwortlichkeit::
+Geschäftslogik für Projektmanagement. Validiert hochgeladene Dateien, extrahiert Metadaten (z. B. aus Git-Repositories) und bereitet Daten für die Analyse vor.
+Schnittstelle:: `IProjektSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IProjektVerwaltung`, `IProjektStorage`
+
+== Komponente `AdminSteuerung`
+Archetyp:: «service»
+Verantwortlichkeit::
+Logik für administrative Aufgaben. Verwaltet Systemzustände und sensitive Benutzeroperationen wie Rollenzuweisungen.
+Schnittstelle:: `IAdminSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IBenutzerVerwaltung`
+
+== Komponente `KriterienkatalogSteuerung`
+Archetyp:: «service»
+Verantwortlichkeit::
+Verwaltung der Fragenkataloge. Logik zum Erstellen, Editieren (Versionierung) und Validieren von Kriterien sowie Import/Export-Funktionen.
+Schnittstelle:: `IKriterienkatalogSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IKriterienKatalogVerwaltung`
+
+== Komponente `LoginSteuerung`
+Archetyp:: «service»
+Verantwortlichkeit::
+Steuerung der Authentifizierungsflüsse. Login, Logout, Registrierung und das Abrufen des aktuellen Benutzerprofils beim Start.
+Schnittstelle:: `ILoginSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IAuthProvider`, `IBenutzerVerwaltung`
+
+== Komponente `StudentKursSteuerung` (optional)
+Archetyp:: «service»
+Verantwortlichkeit::
+Kurslogik für Studierende. Validiert Beitrittscodes und filtert Kursinhalte.
+Schnittstelle:: `IStudentKursSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IKursVerwaltung`
+
+== Komponente `DozentKursSteuerung` (optional)
+Archetyp:: «service»
+Verantwortlichkeit::
+Kurslogik für Dozenten. Erstellung von Kursen, Generierung von Einladungs-Codes, Entfernen von Mitgliedern und Einsicht in alle Studentenergebnisse.
+Schnittstelle:: `IDozentKursSteuerung`
+Realisierung:: s. <<sec:serviceKomponenten, «service»-Komponenten>>
+Benutzt:: `IKursVerwaltung`
+
+== Komponente `ProjektStorage`
+Archetyp:: «service»
+Verantwortlichkeit::
+Technische Komponente zum Hochladen/Verwalten von Projektquellcode (z. B. ZIP-Dateien) in objektbasiertem Speicher.
+Schnittstelle:: `IProjektStorage`
+Realisierung:: Implementierung als Wrapper um `IFirebaseStorageClient` im `shared`-Modul.
+Benutzt:: `IFirebaseStorageClient`
+
+== Komponente `KursVerwaltung`
+Archetyp:: «crud»
+Verantwortlichkeit::
+Datenzugriff auf die Ressource "Kurs". Mappt Datenbank-Dokumente auf Kurs-Objekte.
+Schnittstelle:: `IKursVerwaltung`
+Realisierung:: s. <<sec:crudKomponenten, «crud»-Komponenten>>
+Benutzt:: `IFirestoreClient`
+
+== Komponente `ProjektVerwaltung`
+Archetyp:: «crud»
+Verantwortlichkeit::
+Datenzugriff auf die Ressource "Projekt". Verwaltet Metadaten und Verknüpfungen zum User.
+Schnittstelle:: `IProjektVerwaltung`
+Realisierung:: s. <<sec:crudKomponenten, «crud»-Komponenten>>
+Benutzt:: `IFirestoreClient`, `IFirebaseStorageClient`
+
+== Komponente `BenutzerVerwaltung`
+Archetyp:: «crud»
+Verantwortlichkeit::
+Datenzugriff auf Benutzerprofile. Speichert Einstellungen und Rollen.
+Schnittstelle:: `IBenutzerVerwaltung`
+Realisierung:: s. <<sec:crudKomponenten, «crud»-Komponenten>>
+Benutzt:: `IFirestoreClient`
+
+== Komponente `KriterienKatalogVerwaltung`
+Archetyp:: «crud»
+Verantwortlichkeit::
+Datenzugriff auf Kriterienkataloge.
+Schnittstelle:: `IKriterienKatalogVerwaltung`
+Realisierung:: s. <<sec:crudKomponenten, «crud»-Komponenten>>
+Benutzt:: `IFirestoreClient`
+
+== Komponente `AnalyseVerwaltung`
+Archetyp:: «crud»
+Verantwortlichkeit::
+Datenzugriff und Erstellung von Analyseergebnissen. Speichert das generierte Feedback und Scores. Dient als Abstraktionslayer zwischen `AnalyseSteuerung` und externen Services.
+Schnittstelle:: `IAnalyseVerwaltung`
+Realisierung:: s. <<sec:crudKomponenten, «crud»-Komponenten>>
+Benutzt:: `IFirestoreClient`, `IRestClient`
+
+== Komponente `FirestoreClient`
+Archetyp:: «client»
+Verantwortlichkeit::
+Technischer Wrapper für die Google Firestore Datenbank. Initialisiert die Verbindung und ermöglicht die Kommunikation mit der Datenbank.
+Schnittstelle:: `IFirestoreClient`
+Realisierung:: s. <<sec:clientKomponenten, «client»-Komponenten>>
+
+== Komponente `RestClient`
+Archetyp:: «client»
+Verantwortlichkeit::
+Generischer HTTP-Client für REST-Anfragen an das Backend (Cloud Functions). Behandelt Timeouts und Serialisierung.
+Schnittstelle:: `IRestClient`
+Realisierung:: s. <<sec:clientKomponenten, «client»-Komponenten>>
+
+== Komponente `AuthProvider`
+Archetyp:: «client»
+Verantwortlichkeit::
+Wrapper für Authentifizierungsdienste. Verwaltet OAuth2-/Firebase-Auth-Flows (Google Sign-In).
+Schnittstelle:: `IAuthProvider`
+Realisierung:: s. <<sec:clientKomponenten, «client»-Komponenten>>
+Nutzt:: `dev.gitlive:firebase-auth` zur Anbindung nativer Sign-In SDKs.
+
+Implementierungshinweis::
+Alle \<<service\>\> und \<<crud\>\> Komponenten werden im `shared`-Modul (Kotlin Multiplatform) implementiert. \<<client\>\> Komponenten kapseln plattformspezifische SDKs (Firestore, Auth, HTTP). Optionale Komponenten sind eindeutig als optional gekennzeichnet.

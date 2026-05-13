@@ -1,0 +1,116 @@
+[[sec:verhalten]]
+= [[sec:verhalten]] Verhalten
+
+== LF30 / LF80 / LF110 Quellcodeanalyse
+
+[plantuml, Quellcodeanalyse_Sequencediagramm, svg]
+[[fig:Quellcodeanalyse_Sequencediagramm]]
+----
+@startuml
+actor Student as Student
+participant System as Sys
+actor KI as KI
+
+skinparam sequenceMessageAlign center
+
+Student -> Sys: Quellcodeanalyse starten (Projekt)
+activate Sys
+
+loop Für jedes Projekt (Batch-Analyse LF80)
+    Sys -> Sys: AnalysisStatus = RUNNING
+    Sys -> Sys: Quellcode aus Storage laden
+    Sys -> Sys: Kriterienkatalog laden
+    Sys -> KI: Analyseauftrag senden\n(Quellcode, Kriterienkatalog)
+    activate KI
+    KI -> KI: Quellcodeanalyse durchführen
+    KI --> Sys: Analyseergebnis
+    deactivate KI
+    Sys -> Sys: Analyseergebnis verarbeiten
+    Sys -> Sys: AnalysisStatus = FINISHED
+end
+
+Sys --> Student: Analyseergebnis verfügbar
+deactivate Sys
+@enduml
+----
+In der <<fig:Quellcodeanalyse_Sequencediagramm, Abbildung>> ist das Standard-Systemverhalten bei einer Quellcodeanalyse für `LF30`, `LF80` und `LF110` dargestellt.  
+Um eine Analyse zu starten, müssen zuvor sowohl Quellcode als auch ein Kriterienkatalog vom Benutzer hochgeladen und ausgewählt worden sein. Das System übergibt anschließend Quellcode und Kriterienkatalog an die KI, welche die Analyse durchführt. Die Ergebnisse werden nach Abschluss gespeichert und dem Benutzer in der Feedback- und Bewertungshistorie (`LF40`) zur Verfügung gestellt.
+
+---
+
+== LF10 / LF20 Kriterienkatalog oder Quellcode hochladen
+
+[plantuml, Upload_Sequencediagramm, svg]
+[[fig:Kriterienkatalog_Oder_Quellcode_Hochladen_Sequencediagramm]]
+----
+@startuml
+actor Benutzer as User
+participant System as Sys
+
+User -> Sys: Datei / Ordner hochladen
+activate Sys
+Sys -> Sys: Daten validieren
+Sys -> Sys: Daten in Storage speichern
+Sys --> User: Bestätigung anzeigen
+deactivate Sys
+@enduml
+----
+In der <<fig:Kriterienkatalog_Oder_Quellcode_Hochladen_Sequencediagramm, Abbildung>> ist das Systemverhalten beim Hochladen eines Kriterienkatalogs oder von Quellcode dargestellt.  
+Beim Hochladen eines Kriterienkatalogs kann ausschließlich eine einzelne Datei ausgewählt werden. Beim Hochladen von Quellcode kann der Benutzer einen Ordner oder ein ZIP-Archiv auswählen. Nach erfolgreicher Validierung speichert das System die Daten und zeigt dem Benutzer eine Bestätigung an.
+
+---
+
+== LF70 Kurs anlegen
+
+[plantuml, Kurs_Anlegen_Aktivitaetsdiagramm, svg]
+[[fig:Kurs_Anlegen_Aktivitaetsdiagramm]]
+----
+@startuml
+start
+:Dozent klickt auf\n"Kurs erstellen";
+:Eingabemaske wird angezeigt;
+
+repeat
+    :Dozent gibt Kursdaten ein;
+repeat while (Eingaben valide?) is (nein)
+
+:System erstellt Kurs\nund generiert Kurs-ID;
+:System zeigt Erfolgsmeldung;
+stop
+@enduml
+----
+In der <<fig:Kurs_Anlegen_Aktivitaetsdiagramm, Abbildung>> ist das Systemverhalten beim Anlegen eines Kurses dargestellt.  
+Dieser Vorgang kann ausschließlich von einem Dozenten ausgeführt werden. In der Eingabemaske muss lediglich der Kursname angegeben werden. Das System erzeugt automatisch eine Kurs-ID, die in der Kursansicht angezeigt wird und von Studierenden zum Beitritt benötigt wird.
+
+---
+
+== LF71 Kurs beitreten
+
+[plantuml, Kurs_Beitreten_Aktivitaetsdiagramm, svg]
+[[fig:Kurs_Beitreten_Aktivitaetsdiagramm]]
+----
+@startuml
+start
+:Student klickt auf\n"Kurs beitreten";
+:Eingabemaske wird angezeigt;
+
+repeat
+    :Student gibt Kurs-ID ein;
+    if (Kurs existiert?) then (ja)
+        if (Student bereits Mitglied?) then (ja)
+            :Fehlermeldung anzeigen;
+        else (nein)
+            :Student wird dem Kurs hinzugefügt;
+            :Erfolgsmeldung anzeigen;
+            stop
+        endif
+    else (nein)
+        :Fehlermeldung anzeigen;
+    endif
+repeat while (erneut versuchen?)
+
+stop
+@enduml
+----
+In der <<fig:Kurs_Beitreten_Aktivitaetsdiagramm, Abbildung>> wird das Systemverhalten beim Beitreten eines Kurses beschrieben.  
+Der Student gibt eine Kurs-ID ein. Existiert der Kurs und ist der Student noch kein Mitglied, wird er erfolgreich hinzugefügt und erhält eine Bestätigung. Andernfalls zeigt das System eine Fehlermeldung an und ermöglicht eine erneute Eingabe.

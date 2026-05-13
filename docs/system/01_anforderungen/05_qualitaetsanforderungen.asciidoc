@@ -1,0 +1,92 @@
+[[sec:qualitaetsanforderungen]]
+= [[sec:qualitaetsanforderungen]] Qualitätsanforderungen
+
+[[sec:LQ01]]
+== [[sec:LQ01]] /LQ01/ Reaktionszeit der Benutzeroberfläche
+[horizontal]
+Kategorie:: Performance / Antwortzeit
+Beschreibung:: Das System muss unabhängig von der externen KI-Analyse (Gemini API) flüssig bedienbar bleiben. Aktionen wie Navigation und das Anzeigen vergangener Bewertungen dürfen eine Reaktionszeit von maximal 1 Sekunde nicht überschreiten.
+
+[[sec:LQ02]]
+== [[sec:LQ02]] /LQ02/ Asynchrone Verarbeitung von Analysen
+[horizontal]
+Kategorie:: Performance / Durchsatz
+Beschreibung:: Die Bewertung von Quellcode durch die KI erfolgt asynchron. Während die Analyse läuft, zeigt das System den aktuellen Status (z. B. „Analyse läuft“, „Ergebnisse werden geladen“) an. Dadurch kann der Nutzer weiterarbeiten, ohne dass die Anwendung blockiert.
+
+[[sec:LQ03]]
+== [[sec:LQ03]] /LQ03/ Skalierbarkeit der Cloud-Datenbank (Free Tier)
+[horizontal]
+Kategorie:: Performance / Skalierbarkeit
+Beschreibung:: Das System muss unter Nutzung des Firebase Spark Plans (Free Tier) stabil funktionieren. Typische Interaktionen (z. B. Ergebnisse laden, Kriterienkataloge anzeigen) sollen auch bei bis zu 100 gleichzeitig aktiven Nutzern unter realistischen Nutzungsszenarien performant bleiben, solange die täglichen Lese- und Schreiblimits des Free Tiers nicht überschritten werden.
+
+[[sec:LQ04]]
+== [[sec:LQ04]] /LQ04/ Verfügbarkeit
+[horizontal]
+Kategorie:: Verlässlichkeit / Verfügbarkeit
+Beschreibung:: Das Gesamtsystem (Backend, Firebase, Gemini-API-Anbindung) soll eine hohe Verfügbarkeit aufweisen. Als Zielwert wird eine Verfügbarkeit von ca. 99,5 % angestrebt. Kurzzeitige Ausfälle der KI-Analyse dürfen die Nutzung der Anwendung (z. B. Anzeige gespeicherter Ergebnisse) nicht beeinträchtigen.
+
+[[sec:LQ05]]
+== [[sec:LQ05]] /LQ05/ Datensicherheit
+[horizontal]
+Kategorie:: Sicherheit / Datenschutz
+Beschreibung:: Alle Datenübertragungen (z. B. hochgeladene Quellcodes, Analyse- und Bewertungsberichte) müssen verschlüsselt über HTTPS erfolgen. Der Zugriff auf Cloud-Daten ist ausschließlich authentifizierten Benutzern gestattet.
+
+[[sec:LQ06]]
+== [[sec:LQ06]] /LQ06/ Datenkonsistenz und Synchronisierung
+[horizontal]
+Kategorie:: Zuverlässigkeit / Konsistenz
+Beschreibung:: Änderungen an Projekten, Analyseergebnissen oder Kriterienkatalogen müssen innerhalb von maximal 30 Sekunden auf allen verbundenen Geräten synchronisiert werden.
+
+[[sec:LQ07]]
+== [[sec:LQ07]] /LQ07/ Nachvollziehbarkeit von Analysen
+[horizontal]
+Kategorie:: Wartbarkeit / Nachvollziehbarkeit
+Beschreibung:: Jede Analyse muss mit einem eindeutigen Zeitstempel, einer Benutzer-ID, dem Namen des verwendeten KI-Modells sowie dem zugehörigen Kriterienkatalog gespeichert werden, um spätere Prüfungen oder Vergleiche zu ermöglichen.
+
+[[sec:LQ08]]
+== [[sec:LQ08]] /LQ08/ Änderbarkeit der Bewertungslogik
+[horizontal]
+Kategorie:: Wartbarkeit / Änderbarkeit
+Beschreibung:: Anpassungen an Kriterienkatalogen müssen serverseitig möglich sein, z. B. durch Austausch oder Aktualisierung der Katalogdateien über Firebase oder Cloud Functions, ohne dass eine neue Version der Client-Anwendungen veröffentlicht werden muss.
+
+[[sec:LQ09]]
+== [[sec:LQ09]] /LQ09/ Benutzerfreundlichkeit
+[horizontal]
+Kategorie:: Benutzbarkeit / UI-Design
+Beschreibung:: Die Benutzeroberfläche muss sowohl auf Desktop- als auch auf Android-Geräten intuitiv bedienbar sein. Zentrale Funktionen (z. B. „Projekt hochladen“, „Analyse starten“) dürfen maximal zwei Interaktionsschritte entfernt sein.
+
+[[sec:LQ10]]
+== [[sec:LQ10]] /LQ10/ Robustheit gegenüber fehlerhaften Dateien
+[horizontal]
+Kategorie:: Verlässlichkeit / Robustheit
+Beschreibung:: Das System darf bei fehlerhaften oder unvollständigen Uploads (z. B. fehlende Dateien im Projektordner) nicht abstürzen. Stattdessen muss eine verständliche und aussagekräftige Fehlermeldung angezeigt werden.
+
+[[sec:LQ11]]
+== [[sec:LQ11]] /LQ11/ Reproduzierbarkeit der Ergebnisse
+[horizontal]
+Kategorie:: Zuverlässigkeit / Korrektheit
+Beschreibung:: Bei erneuter Analyse desselben Projekts mit identischem Kriterienkatalog und identischem KI-Modell soll die KI vergleichbare Tendenzen und Ergebnisse in der Bewertung liefern, auch wenn geringfügige Abweichungen aufgrund der Natur KI-basierter Systeme möglich sind.
+
+[[sec:LQ12]]
+== [[sec:LQ12]] /LQ12/ Datenschutz und Löschbarkeit
+[horizontal]
+Kategorie:: Sicherheit / Datenschutz
+Beschreibung:: Nutzer müssen ihre gespeicherten Projekte und Analyseergebnisse jederzeit manuell löschen können. Personenbezogene Daten werden gemäß DSGVO nur so lange gespeichert, wie sie für den Analysezweck erforderlich sind.
+
+[[sec:LQ13]]
+== [[sec:LQ13]] /LQ13/ Plattformkompatibilität
+[horizontal]
+Kategorie:: Skalierbarkeit
+Beschreibung:: Das System besteht aus einer Android-Anwendung sowie einer Desktop-Version für Windows. Die Desktop-Version dient insbesondere der Verwaltung und Analyse mehrerer Projekte durch Dozenten und wissenschaftliche Mitarbeiter. Eine Unterstützung für macOS ist aktuell nicht vorgesehen, kann jedoch zukünftig ergänzt werden.
+
+[[sec:LQ14]]
+== [[sec:LQ14]] /LQ14/ Erweiterbarkeit
+[horizontal]
+Kategorie:: Wartbarkeit / Änderbarkeit
+Beschreibung:: Das System muss so aufgebaut sein, dass zukünftig weitere KI-Modelle oder zusätzliche Features integriert werden können, ohne dass grundlegende Änderungen an der bestehenden Architektur notwendig sind.
+
+[[sec:LQ15]]
+== [[sec:LQ15]] /LQ15/ Manipulationssicherheit
+[horizontal]
+Kategorie:: Manipulationssicherheit
+Beschreibung:: Das System muss robust gegen Adversarial Prompting sein. Kommentare oder Anweisungen innerhalb des zu analysierenden Quellcodes dürfen die Bewertungslogik oder das Ausgabeformat nicht verändern.

@@ -1,0 +1,26 @@
+[[sec:administration]]
+= [[sec:administration]] Administration
+
+Die Administrationsfunktionen stehen ausschließlich Benutzern mit der Rolle *Administrator* zur Verfügung.
+Sie dienen der Überwachung und Verwaltung des Systems auf technischer und organisatorischer Ebene.
+
+[[sec:benutzerverwaltung]]
+== [[sec:benutzerverwaltung]] Benutzerverwaltung
+
+Administratoren können alle registrierten Benutzer im System einsehen.
+Dabei besteht die Möglichkeit:
+
+* Benutzerkonten zu sperren oder zu deaktivieren
+* Rollen zu vergeben oder zu ändern (Student, Dozent, Administrator)
+
+[[sec:systemueberwachung]]
+== [[sec:systemueberwachung]] Systemüberwachung
+
+Administratoren haben Zugriff auf ein Admin-Panel innerhalb der Anwendung.
+Dieses ermöglicht die Überwachung zentraler Systemkomponenten, insbesondere:
+
+* Verfügbarkeit der angebundenen Cloud-Dienste
+* Status der KI-Schnittstelle
+* Erreichbarkeit der Datenbankdienste
+
+Die Administration dient ausschließlich der Systempflege und nicht der inhaltlichen Bewertung von Projekten.

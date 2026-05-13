@@ -1,0 +1,59 @@
+[[sec:akteure]]
+= Akteure
+
+Es existieren folgende Akteure, die mit der Anwendung interagieren. Die Interaktion zwischen
+dem System und den Akteuren wird über die Kotlin-Multiplatform-Anwendung realisiert, die
+sowohl als Desktop- als auch als Android-Anwendung zur Verfügung steht.
+
+*Admin*::
+Administratoren verwalten und überwachen die Plattform auf Systemebene. Sie besitzen die
+höchsten Zugriffsrechte im System und können insbesondere Benutzerrollen (Student, Dozent,
+Admin) verwalten.
++
+Darüber hinaus verfügen Administratoren über ein eigenes Admin-Panel innerhalb der
+Anwendung. Dieses ermöglicht es, den aktuellen Systemzustand einzusehen, insbesondere den
+Verbindungsstatus zu zentralen externen Diensten wie der angebundenen KI-API sowie der
+Firebase-Datenbank.
++
+Durch diese Funktionen stellen Administratoren sicher, dass das System betriebsbereit ist
+und zentrale Abhängigkeiten korrekt funktionieren. Das Admin-Panel dient dabei der
+technischen Überwachung und nicht der inhaltlichen Bewertung von Projekten.
+
+*Dozent*::
+Akteure dieser Gruppe nutzen primär die Desktop-Anwendung zur Verwaltung und Bewertung von
+studentischen Software-Projekten. Sie können automatisierte Analysen einzelner oder
+mehrerer Projekte auf Basis eines vordefinierten Kriterienkatalogs durch die KI starten.
++
+Hierbei besteht die Möglichkeit, mehrere Projekte im Rahmen einer Batch-Analyse
+nacheinander analysieren zu lassen, um den Korrekturaufwand zu reduzieren. Nach Abschluss
+der Analysen können Dozenten die Ergebnisse einsehen, kommentieren, einen Bewertungsstatus
+(z. B. „in Ordnung“ / „nicht in Ordnung“) festlegen und Feedback für Studierende
+hinterlegen.
++
+Über die Android-Anwendung können Dozenten Analyseergebnisse und Statusinformationen auch
+mobil einsehen, um diese beispielsweise während eines Praktikumstermins mit Studierenden
+zu besprechen.
+
+*Student*::
+Studierende nutzen die Desktop-Anwendung, um eigene Softwareprojekte (z. B. aus einem
+Git-Repository oder lokal) hochzuladen und mit einem eigenen oder vorgegebenen
+Kriterienkatalog analysieren zu lassen. Sie erhalten automatisiertes Feedback und
+Verbesserungsvorschläge zum Code, die ausschließlich für sie selbst einsehbar sind.
++
+Zusätzlich können Studierende sowohl über die Desktop- als auch über die Android-Anwendung
+das finale Ergebnis ihrer Abgabe inklusive Status (z. B. bestanden / nicht bestanden) und
+das Feedback des Dozenten einsehen, sobald die Bewertung freigegeben wurde.
+
+*KI*::
+Die Künstliche Intelligenz (KI) bildet das technische Kernsystem der Plattform und fungiert
+als automatisierter Akteur. Sie analysiert und bewertet den eingereichten Quellcode anhand
+eines oder mehrerer vordefinierter Kriterienkataloge.
++
+Die KI führt Code-Analysen sowohl auf syntaktischer Ebene (z. B. Formatierung, Struktur,
+Code-Smells) als auch auf semantischer Ebene (z. B. Logik, Funktionalität, Effizienz) durch.
+Auf dieser Grundlage erstellt sie Feedback und Verbesserungsvorschläge, die den
+Studierenden und Dozenten zur Verfügung gestellt werden.
++
+Die Anbindung der KI erfolgt serverseitig über Firebase Cloud Functions, welche als
+Vermittlungsschicht zwischen der Kotlin-Multiplattform-Anwendung und der externen
+KI-API dienen.

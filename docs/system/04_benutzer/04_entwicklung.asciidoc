@@ -1,0 +1,116 @@
+[[sec:entwicklung]]
+= [[sec:entwicklung]] Entwicklung
+
+
+Dieses Kapitel richtet sich an Entwickler und Betreuer, die das System lokal ausführen oder weiterentwickeln möchten.
+Das Projekt ist als *Kotlin Multiplatform (KMP)* Anwendung konzipiert.
+
+[[sec:voraussetzungen]]
+== [[sec:voraussetzungen]] Voraussetzungen
+
+Um die Entwicklungsumgebung aufzusetzen, müssen folgende Tools installiert und konfiguriert sein:
+
+* *Java Development Kit (JDK):* Version 17 (oder höher, entwickelt mit 21). Die `JAVA_HOME` Umgebungsvariable muss entsprechend gesetzt sein.
+* *Android Studio:* Empfohlen wird die Version "Otter" (Entwickelt mit Android Studio Otter 3 Feature Drop | 2025.2.3) oder neuer mit installiertem Kotlin Multiplatform Mobile Plugin.
+* *Android SDK:* API Level  26 (Android 8.0) (oder aktuell entsprechend `build.gradle.kts`) muss installiert sein.
+* *Git:* Für die Versionsverwaltung.
+* *Firebase CLI:* Für das Deployment von Cloud Functions und Sicherheitsregeln.
+
+[[sec:build_run]]
+== [[sec:build_run]] Build and Run
+
+Das Repository kann über Git geklont werden:
+
+[source,bash]
+----
+git clone https://gitlab.nt.fh-koeln.de/gitlab/syp25/team06.git
+cd team06
+----
+
+Da das Projekt auf Cloud-Dienste zugreift, müssen API-Keys konfiguriert werden. Erstellen Sie im Root-Verzeichnis eine Datei `local.properties` (falls nicht vorhanden) und fügen Sie notwendige Schlüssel hinzu:
+
+[source,properties]
+----
+# Google OAuth 2.0 Credentials for Desktop
+CODE_SCOPE_DESKTOP_CLIENT_ID=paste_id_here
+CODE_SCOPE_DESKTOP_CLIENT_SECRET=paste_secret_here
+
+# Firebase Konfiguration (Einheitliche Keys für das Gradle-Script)
+CODE_SCOPE_FIREBASE_API_KEY=paste_secret_here
+CODE_SCOPE_FIREBASE_PROJECT_ID=codescope-df36a
+CODE_SCOPE_FIREBASE_STORAGE_BUCKET=codescope-df36a.firebasestorage.app
+FIREBASE_FUNCTIONS_REGION=europe-west3
+
+----
+
+NOTE: Wenden Sie sich an die Projektverantwortlichen, um Zugriff auf das Firebase-Projekt und die aktuellen API-Schlüssel zu erhalten.
+
+[[sec:bauen_starten]]
+=== [[sec:bauen_starten]] Projekt bauen und starten
+
+==== Android-Anwendung
+
+* Projekt in Android Studio öffnen
+* Run-Configuration `composeApp` (Android) wählen
+* Gradle-Synchronisation durchführen
+* Anwendung auf Emulator oder physischem Gerät starten
+
+[source,bash]
+----
+# Alternativ über Terminal:
+./gradlew :composeApp:installDebug
+----
+
+==== Desktop-Anwendung
+Die Desktop-Anwendung kann direkt über einen Gradle-Task gestartet werden. Dies nutzt das installierte JDK 21.
+
+* Projekt klonen
+* Build über Gradle durchführen
+* Start der Desktop-Anwendung über das erzeugte Artefakt
+
+[source,bash]
+----
+# Alternativ über Terminal
+# Starten der Desktop-Applikation 
+./gradlew :composeApp:run
+----
+
+
+Die Desktop-Anwendung kommuniziert über HTTPS mit den Firebase Cloud Functions,
+während die Android-Anwendung direkt das Firebase SDK verwendet.
+
+
+==== Package Distribution
+Um installierbare Artefakte (z. B. `.exe` oder `.msi` für Windows) zu erzeugen:
+
+[source,bash]
+----
+# Im Terminal
+./gradlew :composeApp:packageDistributionForCurrentOS
+----
+Die Artefakte befinden sich anschließend unter `team06\composeApp\build\compose\binaries\main`.
+
+[[sec:codebase]]
+== [[sec:codebase]] Code-Base
+
+Das Projekt folgt einer *Clean Architecture* und verwendet das *MVVM* (Model-View-ViewModel) Entwurfsmuster. Die Struktur gliedert sich wie folgt:
+
+* *`composeApp`*: Das Hauptmodul der KMP-Anwendung.
+** *`src/commonMain`*: Enthält den Großteil des Codes, der zwischen Android und Desktop geteilt wird (UI-Code in Compose, ViewModels, Repositories, Domain-Logik).
+** *`src/androidMain`*: Android-spezifische Implementierungen (z. B. spezifische File-System-Zugriffe, Start-Activity).
+** *`src/jvmMain`*: Desktop-spezifische Implementierungen und der Einstiegspunkt `main.kt`.
+
+* *`functions`*: Enthält den Backend-Code (in /src/index.ts) für Firebase Cloud Functions (TypeScript/Node.js).
+
+* *`firestore.rules` & `storage.rules`*: Enthält die Regeln für den Zugriff auf Firebase Firestore und Firebase Storage.
+
+* *Dokumentation generieren:*
+Eine technische API-Dokumentation (KDoc) kann mittels Dokka generiert werden:
+[source,bash]
+----
+./gradlew :composeApp:dokkaHtml
+# oder
+./gradlew clean :composeApp:dokkaHtml
+
+----
+Das Ergebnis liegt anschließend im Ordner `composeApp/build/dokka/html`.

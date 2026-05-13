@@ -1,0 +1,73 @@
+[[sec:uebersicht]]
+= Übersicht
+Mit dem System CodeScope kann der Benutzer ein Software-Projekt automatisiert mithilfe von
+künstlicher Intelligenz analysieren und bewerten lassen. Basierend auf dem Feedback kann
+somit eine höhere Codequalität erreicht werden, da dem Nutzer entsprechende Verbesserungen
+und Best Practices vorgeschlagen werden. Im Folgenden wird das System näher erläutert.
+
+[[sec:einsatzzweck]]
+== Einsatzzweck
+CodeScope ist eine Anwendung, die es Studierenden und Dozenten ermöglicht,
+Software-Projekte automatisiert durch eine Künstliche Intelligenz (KI) überprüfen zu lassen.
+Die Analyse basiert auf vordefinierten, anpassbaren Fragenlisten bzw. Kriterienkatalogen.
+Die Analyseergebnisse werden gespeichert und können sowohl über die Desktop-Anwendung
+als auch über die mobile Applikation eingesehen werden. Der primäre Einsatzzweck ist die
+effiziente Überprüfung von Quellcode hinsichtlich spezifischer Qualitätsmerkmale und der
+Einhaltung von Best Practices.
+
+Für *Studierende* dient das System als Werkzeug zur Selbstkontrolle, Qualitätsverbesserung
+sowie zur Erhöhung des Verständnisses für Codequalität. Sie können ihre Quellcode-Projekte
+hochladen und anhand von vorgegebenen oder eigenen Kriterienkatalogen analysieren lassen.
+Das System liefert automatisiertes Feedback zu Aspekten wie Codequalität, Stil oder
+Einhaltung spezifischer Vorgaben. Studierende können ihre Analysehistorie einsehen und
+erhalten zudem die finale Bewertung und das Feedback ihrer Dozenten zu eingereichten
+Projekten.
+
+Für *Dozenten* vereinfacht das System die Bewertung von studentischen Software-Projekten.
+Sie können Kriterienkataloge erstellen und für Kurse bereitstellen. Das System ermöglicht
+die Analyse einzelner Projekte sowie die Stapelverarbeitung ganzer Abgabesätze, um den
+Korrekturaufwand zu reduzieren. Dozenten können die Analyseergebnisse prüfen, kommentieren,
+einen Bewertungsstatus (z. B. in Ordnung / nicht in Ordnung) festlegen und das finale
+Feedback an die Studierenden übermitteln. Die Anzeige von Ergebnissen und Bewertungsständen
+für ganze Kurse unterstützt den Überblick über den Fortschritt.
+
+[[sec:technik]]
+== Technik
+Bei CodeScope handelt es sich um eine Neuentwicklung. Das System ist als verteilte Anwendung
+konzipiert und besteht aus zwei Client-Anwendungen für Endbenutzer – einer nativen
+Android-Applikation und einer Desktop-Anwendung (Windows) – sowie einem cloud-basierten
+Backend. Es werden etablierte externe Cloud-Dienste für Kernfunktionalitäten wie Persistenz,
+Authentifizierung und KI-Analyse genutzt.
+
+Beide Client-Anwendungen werden mittels Kotlin Multiplatform (KMP) entwickelt. Dies
+ermöglicht die Nutzung einer gemeinsamen Codebasis (Shared-Modul) für Geschäftslogik,
+Datenzugriff und die Anbindung an das Backend. Die Benutzeroberflächen (UI) werden mit
+Compose Multiplatform (CMP) implementiert, was eine deklarative UI-Gestaltung (analog zu
+Jetpack Compose) für Android ermöglicht und für Konsistenz zwischen der Android-App und der
+Desktop-Anwendung sorgt.
+
+Das Backend wird serverless unter Verwendung von Google Firebase Cloud Functions realisiert.
+Diese dienen als Proxy für Anfragen an die externe Google Gemini API, um API-Schlüssel sicher
+zu verwalten und Analyseprozesse auszuführen. Die Kommunikation zwischen Clients und Cloud
+Functions erfolgt über Firebase Callable Functions. Auf Android werden diese direkt über das
+Firebase SDK genutzt, während die Desktop-Anwendung die Callable-Funktionen über HTTPS im
+von Firebase definierten Callable-Protokoll anspricht.
+
+Die Gesamtarchitektur folgt einem Client-Server-Modell mit einem serverless Cloud-Backend.
+Innerhalb des KMP-Shared-Moduls wird eine an Clean Architecture angelehnte Struktur
+angestrebt (z. B. Trennung in Data-, Domain- und Presentation-Layer). Für die UI-Interaktion
+in den CMP-Clients wird das Model-View-ViewModel-(MVVM)-Muster verwendet, um eine klare
+Trennung von Oberfläche und Programmlogik zu gewährleisten.
+
+Die Datenhaltung erfolgt vollständig über Google Firebase. Firebase Authentication wird für
+die Benutzerregistrierung und -anmeldung via Google-Konto eingesetzt, wobei Rollen
+(Student, Dozent, Admin) als Attribut im Benutzerprofil in Firebase Firestore verwaltet
+werden. Firebase Firestore dient als NoSQL-Cloud-Datenbank für strukturierte Daten wie
+Benutzerprofile, Kriterienkataloge, Analyseergebnisse und Kursinformationen. Firebase
+Storage wird zur Speicherung hochgeladener Quellcode-Projekte für die Dauer des
+Analyseprozesses genutzt.
+
+Das Projekt wird mit Gradle als Build-System verwaltet. Die Cloud-Komponenten laufen auf der
+Google Cloud Platform (Firebase). Die Android-App wird über den Google Play Store (oder
+manuell per APK) verteilt. Die Desktop-Anwendung wird als ausführbares Paket (z. B. Fat JAR)
+für Windows bereitgestellt.

@@ -1,0 +1,32 @@
+[[sec:installation]]
+= [[sec:installation]] Installation
+
+Dieses Kapitel beschreibt die Installation und den Start der Anwendung CodeScope aus Sicht der Endbenutzer.
+Es werden keine technischen Details zur Entwicklung oder zum Build-Prozess erläutert.
+
+[[sec:DesktopAnwendung]]
+== [[sec:DesktopAnwendung]] Desktop-Anwendung
+
+Die Desktop-Version von CodeScope wird für Windows bereitgestellt.
+Sie kann ohne zusätzliche Installation direkt gestartet werden.
+
+* Die Anwendung wird als ausführbare Datei (`.exe`) bzw. als Fat-JAR ausgeliefert.
+* Ein Doppelklick auf die Anwendung startet CodeScope.
+* Es ist keine lokale Datenbank oder zusätzliche Server-Software erforderlich.
+* Für die Nutzung ist eine aktive Internetverbindung notwendig, da Analyse- und Authentifizierungsdienste über Cloud-Services bereitgestellt werden.
+
+[[sec:AndroidAnwendung]]
+== [[sec:AndroidAnwendung]] Android-Anwendung
+
+Die Android-Version von CodeScope wird als APK-Datei bereitgestellt.
+
+*Installation:*
+
+* Die APK-Datei muss auf das Android-Gerät übertragen werden.
+* Die Installation erfolgt manuell durch Ausführen der APK (Sideloading). Gegebenenfalls muss die Installation aus unbekannten Quellen in den Einstellungen erlaubt werden.
+
+*Startvorgang:*
+
+* Nach der Installation kann die App über den App-Drawer gestartet werden.
+* Beim ersten Start erfolgt die Authentifizierung über ein Google-Konto.
+* Der Benutzer wird aufgefordert, Berechtigungen für Benachrichtigungen zu erteilen.

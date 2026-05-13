@@ -1,0 +1,98 @@
+[[sec:daten]]
+= [[sec:daten]]  Daten
+
+Im System CodeScope werden verschiedene Entitätstypen verarbeitet, die für die Durchführung
+und Verwaltung von automatisierten Codeanalysen notwendig sind. Die folgenden Abschnitte
+beschreiben die fachlich relevanten Datenobjekte und ihre Beziehungen auf konzeptioneller
+Ebene. Ziel ist es, ein gemeinsames Verständnis der zentralen Entitäten zu schaffen, ohne
+dabei auf technische Details der Speicherung (z. B. in Firebase) einzugehen.
+
+[[sec:LD01]]
+== [[sec:LD01]] /LD01/ Project
+Ein *Project* repräsentiert eine von einem Benutzer hochgeladene Codebasis, die durch die KI
+analysiert werden soll. Jedes Projekt enthält Metadaten (z. B. Projektname, Upload-Datum)
+sowie Referenzen auf den zugehörigen Kriterienkatalog und die Analyseergebnisse. Die
+Quellcodebasis kann dabei aus unterschiedlichen Quellen stammen, z. B. einem lokalen
+Verzeichnis oder einem Versionsverwaltungssystem.
+
+Attribute (Beispiele):
+- projectId
+- name
+- ownerId
+- sourceLocation
+- status (z. B. „UPLOADED“, „ANALYZED“, „REVIEWED“)
+
+[[sec:LD02]]
+== [[sec:LD02]] /LD02/ CriteriaCatalog
+Ein *CriteriaCatalog* ist eine Sammlung von Fragen und Bewertungskriterien, anhand derer die
+KI den Quellcode bewertet. Benutzer können mehrere unterschiedliche Kriterienkataloge
+definieren, z. B. für verschiedene Bewertungsschwerpunkte wie Codequalität oder
+Dokumentation. Ein Projekt kann auf Basis eines oder mehrerer Kriterienkataloge analysiert
+werden.
+
+Attribute (Beispiele):
+- catalogId
+- name
+- ownerId
+- fileIds
+- lastUpdated
+
+[[sec:LD03]]
+== [[sec:LD03]] /LD03/ AnalysisResult
+Ein *AnalysisResult* ist das Ergebnis einer durch die KI durchgeführten Codeanalyse. Es
+enthält erkannte Schwächen, Stärken sowie Verbesserungsvorschläge. Jedes Analyseergebnis
+ist eindeutig einem Projekt sowie einem Kriterienkatalog zugeordnet.
+
+Attribute (Beispiele):
+- resultId
+- userId
+- projectId
+- criteriaCatalogId
+- model
+- status
+- score (modellabhängige Bewertung)
+- feedback
+- createdAt
+- updatedAt
+
+[[sec:LD04]]
+== [[sec:LD04]] /LD04/ User
+Ein *User* stellt eine Person dar, die das System verwendet. Benutzer können Studierende,
+Dozenten oder Administratoren sein. Die Authentifizierung erfolgt über einen
+Google-Login (Firebase Authentication). Benutzer können eigene Projekte, Analysen und
+Kriterienkataloge erstellen und verwalten.
+
+Attribute (Beispiele):
+- userId
+- name
+- email
+- role (z. B. „STUDENT“, „LECTURER“, „ADMIN“)
+
+[[sec:LD05]]
+== [[sec:LD05]] /LD05/ Course
+Ein *Course* dient der Bündelung von Benutzern (Dozenten und Studierenden) und fachlichen
+Ressourcen. Er ermöglicht es Dozenten, Kriterienkataloge gezielt mit einer Gruppe von
+Studierenden zu teilen und deren Analyseergebnisse einzusehen. Studierende treten einem
+Kurs mittels eines Kurscodes bei.
+
+Attribute (Beispiele):
+- courseId
+- name
+- lecturerId
+- memberIds
+- sharedCatalogIds
+
+[[sec:LD06]]
+== [[sec:LD61]] /LD06/ Beziehungen zwischen den Entitäten
+
+- Ein *User* kann mehrere *Projects* besitzen.
+- Ein *User* (Dozent) kann mehrere *Courses* erstellen und leiten.
+- Ein *User* (Student) kann Mitglied in mehreren *Courses* sein.
+- Ein *User* kann mehrere *AnalysisResults* einsehen bzw. besitzen.
+- Ein *Project* kann auf Basis eines oder mehrerer *CriteriaCatalogs* analysiert werden.
+- Jedes *AnalysisResult* gehört zu genau einem *Project* und bezieht sich auf genau einen
+  *CriteriaCatalog*.
+- Ein *CriteriaCatalog* kann von mehreren *Projects* genutzt werden.
+- Ein *Dozent* kann *CriteriaCatalogs* erstellen und verwalten, die von Studierenden
+  verwendet werden.
+- Ein *Course* kann mehrere *CriteriaCatalogs* mit seinen Mitgliedern teilen.

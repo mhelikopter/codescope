@@ -100,6 +100,10 @@ Firebase (Android SDK) | Firebase REST API (JVM)
 
 For the full layered breakdown, the KMP Firebase split, the end-to-end analysis flow, and a summary of the security rules, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
+## Documentation
+
+The repository also ships the engineering documentation produced alongside the app — requirements, specification, architecture, and the developer guide — under [`docs/`](./docs/). The docs are in German (matching the original course) and AsciiDoc-formatted; the entry point is [`docs/README.md`](./docs/README.md).
+
 ## Project context & my contributions
 
 CodeScope was built as a group project at **TH Köln**, course **SYP25**, **Team 06**, winter term **2025/2026**. Four core contributors landed roughly 342 commits between January and February 2026. This fork is maintained by **Maximilian Ehling** for portfolio purposes.

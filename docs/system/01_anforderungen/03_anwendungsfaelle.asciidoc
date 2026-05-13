@@ -1,0 +1,283 @@
+[[sec:anwendungsfaelle]]
+= [[sec:anwendungsfaelle]] Anwendungsfälle
+
+[plantuml]
+:plantuml-format: svg
+.UML-Anwendungsfalldiagramm für CodeScope
+----
+left to right direction
+:Student: as Student
+:Dozent: as Dozent
+:Admin: as Admin
+
+:KI: as KI
+
+rectangle CodeScope {
+    usecase (/LF10/ Quellcode Hochladen) as LF10
+    usecase (/LF20/ Kriterienkatalog Hochladen) as LF20
+    usecase (/LF21/ Kriterienkataloge Anzeigen) as LF21
+    usecase (/LF22/ Kriterienkatalog im Kurs teilen) as LF22
+    usecase (/LF23/ Kriterienkatalog verwalten) as LF23
+    usecase (/LF24/ KI-Kriterienkatalog erstellen) as LF24
+    usecase (/LF30/ Quellcodeanalyse starten) as LF30
+    usecase (/LF31/ Bewertung an Studierende senden) as LF31
+    usecase (/LF40/ Feedback-/Bewertunghistorie anzeigen) as LF40
+    usecase (/LF41/ Analyseergebnisse löschen) as LF41
+    usecase (/LF42/ Analyseergebnisse teilen) as LF42
+    usecase (/LF50/ KI-Modell ändern) as LF50
+    usecase (/LF60/ Registrieren) as LF60
+    usecase (/LF61/ Einloggen/Ausloggen) as LF61
+    usecase (/LF70/ Kurs anlegen) as LF70
+    usecase (/LF71/ Kurs beitreten) as LF71
+    usecase (/LF72/ Dozenten Kursansicht anzeigen) as LF72
+    usecase (/LF73/ Kursmitglied entfernen) as LF73
+    usecase (/LF74/ Kursmitgliedschaft beenden) as  LF74
+    usecase (/LF75/ Studenten Kursansicht anzeigen) as LF75
+    usecase (/LF80/ Batch-Analyse starten) as LF80
+    usecase (/LF90/ Analyseergebnisse verwalten) as LF90
+    usecase (/LF100/ Rollen vergeben) as LF100
+    usecase (/LF101/ Benutzer verwalten) as LF101
+    usecase (/LF102/ Kurse verwalten) as LF102
+    usecase (/LF110/ Quellcodeanalyse durchführen) as LF110
+}
+Student <|-l- Dozent
+
+Student --> LF10
+Student --> LF20
+Student --> LF21
+LF22 .u.> LF72 : <<include>>
+LF23 .u.> LF21 : <<include>>
+Student --> LF24
+LF24 --> KI
+Student --> LF30
+LF31 .u.> LF40 : <<include>>
+Student --> LF40
+LF41 .u.> LF40 : <<include>>
+Student --> LF42
+Student --> LF50
+Student --> LF60
+Student --> LF61
+Dozent --> LF70
+Student --> LF71
+Dozent --> LF72
+LF73 .u.> LF72 : <<include>>
+LF74 .u.> LF75 : <<include>>
+Student --> LF75
+Dozent --> LF80
+LF90 .u.> LF40 : <<include>>
+Admin -d-> LF100
+Admin -d-> LF101
+Admin -d-> LF102
+KI --> LF110
+LF30 --> KI
+
+----
+
+[[sec:LF10]]
+== [[sec:LF10]] /LF10/ Quellcode Hochladen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer wählt über die Desktop-Anwendung eine Quelle für den Quellcode aus (z.B. lokaler Ordner, Google-Drive-Ordner, Git-Repository-URL). Das System lädt den Quellcode zur temporären Verarbeitung für die Analyse hoch. Dozenten können auch Archive mit mehreren Projekten (/LF80/) hochladen.
+
+
+[[sec:LF20]]
+== [[sec:LF20]] /LF20/ Kriterienkatalog Hochladen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer wählt einen vorhandenen Kriterienkatalog aus der Liste aus oder lädt eine neue Katalogdatei (Format: TXT oder JSON) für die Analyse hoch.
+
+[[sec:LF21]]
+== [[sec:LF21]] /LF21/ Kriterienkataloge Anzeigen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Benutzer können ihre Kriterienkataloge(selbst hochgeladen, erstellt oder vom Kurs erhalten) anzeigen lassen und exportieren.
+
+[[sec:LF22]]
+== [[sec:LF22]] /LF22/ Kriterienkatalog im Kurs teilen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können einen von ihm verwalteten Kriterienkatalog (siehe /LF23/) für einen bestimmten Kurs (/LF70/) freigeben. Studierende dieses Kurses (/LF71/) können diesen Katalog dann für ihre Analysen auswählen (/LF20/).
+
+[[sec:LF23]]
+== [[sec:LF23]] /LF23/ Kriterienkatalog verwalten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer kann Kriterienkataloge im System erstellen, bearbeiten (Fragen hinzufügen, ändern oder löschen) und löschen. Diese Kataloge stehen ihm - und wenn er Dozent ist - ggf. geteilten Kursen (/LF22/) zur Verfügung.
+
+[[sec:LF24]]
+== [[sec:LF24]] /LF24/ KI-Kriterienkatalog erstellen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer kann sich basierend auf einer Themenbeschreibung (Prompt) automatisch einen neuen Kriterienkatalog von der KI generieren lassen. Dieser wird anschließend in der Liste der verfügbaren Kataloge gespeichert.
+
+[[sec:LF30]]
+== [[sec:LF30]] /LF30/ Quellcodeanalyse starten
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer startet die KI-basierte Analyse für ein hochgeladenes Projekt (/LF10/) unter Verwendung eines ausgewählten Kriterienkatalogs (/LF20/) und KI-Modells (/LF50/). Die Analyse läuft asynchron im Hintergrund. Das Ergebnis wird nach Abschluss gespeichert und in der Historie (/LF40/) angezeigt.
+
+[[sec:LF31]]
+== [[sec:LF31]] /LF31/ Bewertung an Studierende senden
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Nachdem ein Dozent die Analyseergebnisse eines Studentenprojekts geprüft und ggf. kommentiert hat (/LF90/), kann er die finale Bewertung explizit für den betreffenden Studierenden in seinem Kurs freigeben bzw. senden. Der Student erhält dazu eine Push-Notification.
+
+[[sec:LF40]]
+== [[sec:LF40]] /LF40/ Feedback-/Bewertunghistorie anzeigen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer kann eine Liste seiner vergangenen Code-Analysen einsehen. Bei eingeloggtem Zustand (/LF61/) werden die in der Cloud gespeicherten Ergebnisse angezeigt, andernfalls kann er nur die Historie einsehen. Zu jeder Analyse werden Metadaten (Datum, Kriterienkatalog) und das Ergebnis (Status, Feedback) angezeigt.
+
+[[sec:LF41]]
+== [[sec:LF41]] /LF41/ Analyseergebnisse löschen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Der Benutzer kann Analyseergebnisse, die von der KI erstellt wurden (/LF30/), aus seiner Historie (/LF40/) löschen. Dozenten können auch die Bewertungen löschen, die sie an Studierende geschickt haben.
+
+[[sec:LF42]]
+== [[sec:LF42]] /LF42/ Analyseergebnisse teilen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student
+Beschreibung:: Studierende können ihre Analyseergebnisse mit Dritten teilen.
+
+[[sec:LF50]]
+== [[sec:LF50]] /LF50/ KI-Modell auswählen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student, Dozent
+Beschreibung:: Vor dem Start einer Analyse (/LF30/) kann der Benutzer aus einer Liste verfügbarer KI-Modelle (z.B. verschiedene Gemini-Versionen, ChatGPT) auswählen, welches für die Bewertung verwendet werden soll. Ein Standardmodell ist vorkonfiguriert.
+
+[[sec:LF60]]
+== [[sec:LF60]] /LF60/ Registrieren
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Ein neuer Benutzer kann sich über sein Google-Konto für die Anwendung registrieren. Das System legt ein Benutzerprofil in Firebase Authentication an und verknüpft es für die Cloud-Speicherung von Nutzerdaten (Analysehistorie, Kriterienkataloge) und das Beitreten zu einem Kurs.
+
+[[sec:LF61]]
+== [[sec:LF61]] /LF61/ Einloggen/Ausloggen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: Student, Dozent
+Beschreibung:: Ein registrierter Benutzer kann sich mit seinem Google-Konto in der Desktop- oder Android-Anwendung ein- und ausloggen. Der Login ist Voraussetzung für den Zugriff auf in der Cloud gespeicherte Daten (Analysehistorie, Kriterienkataloge, Kurse).
+
+[[sec:LF70]]
+== [[sec:LF70]] /LF70/ Kurs anlegen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können einen neuen Kurs erstellen (z.B. "SYP WS25/26"). Kurse dienen zur Bewertung von Projekten und zum Teilen vom Kriterienkatalogen für eine Gruppe von Studierenden.
+
+[[sec:LF71]]
+== [[sec:LF71]] /LF71/ Kurs beitreten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student, Dozent
+Beschreibung:: Studierende können einen vom Dozenten erstellten Kurs beitreten. Nach dem Beitritt erhalten die Studierenden Zugriff auf geteilte Kriterienkataloge (/LF21/) und die Studierendenkursansicht(/LF75/).
+
+[[sec:LF72]]
+== [[sec:LF72]] /LF72/ Dozenten Kursansicht anzeigen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können alle Studierende, die in ihrem Kurs sind, sehen und verwalten. Sie können außerdem für jeden Studierenden alle Analysen anzeigen lassen, die der Dozent an ihn gesendet hat.
+
+[[sec:LF73]]
+== [[sec:LF73]] /LF73/ Kursmitglied entfernen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können über die Kursansicht (/LF72/) Studierende aus dem Kurs entfernen.
+
+[[sec:LF74]]
+== [[sec:LF74]] /LF74/ Kursmitgliedschaft beenden
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Studenten können ein Kurs, in dem sie sind, verlassen, indem sie den Button im Studentenkursansicht (/LF75/) klicken.
+
+[[sec:LF75]]
+== [[sec:LF75]] /LF75/ Studentenkursansicht anzeigen
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Student
+Beschreibung:: Studenten können Mitglieder und den Dozenten eines Kurses, an dem sie teilnehmen, sehen. Von dieser Ansicht können sie auch den Kurs verlassen(/LF74/)
+
+[[sec:LF80]]
+== [[sec:LF80]] /LF80/ Batch-Analyse starten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können über die Desktop-Anwendung mehrere Projekte gleichzeitig hochladen und die Analyse für alle Projekte mit einem ausgewählten Kriterienkatalog und KI-Modell starten.
+
+[[sec:LF90]]
+== [[sec:LF90]] /LF90/ Analyseergebnisse verwalten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Dozent
+Beschreibung:: Dozenten können die automatisch generierten Analyseergebnisse (/LF30/) für einzelne Projekte (insbesondere im Kontext eines Kurses /LF72/) einsehen, manuell überprüfen, einen finalen Status (z.B. "in Ordnung", "nicht in Ordnung - Nachbesserung erforderlich") setzen und zusätzliches schriftliches Feedback hinzufügen, bevor die Bewertung an den Studierenden gesendet wird (/LF31/).
+
+[[sec:LF100]]
+== [[sec:LF100]] /LF100/ Rollen vegeben
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Admin
+Beschreibung:: Admins können bestehenden Nutzenden mit der Rolle Student die Rolle Dozent zuweisen, indem sie die E-Mail-Adresse eines bestehenden Nutzenden eingeben.
+
+[[sec:LF101]]
+== [[sec:LF101]] /LF101/ Benutzer verwalten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Admin
+Beschreibung:: Admins können eine Liste aller registrierten Benutzer im System einsehen. Sie haben zudem die Möglichkeit, Benutzerkonten bei Bedarf zu deaktivieren oder zu sperren.
+
+[[sec:LF102]]
+== [[sec:LF102]] /LF102/ Kurse verwalten
+
+[horizontal]
+Priorität:: Optional
+Akteur:: Admin
+Beschreibung:: Admins können alle im System angelegten Kurse einsehen und diese bei Bedarf (z.B. veraltete oder leere Kurse) löschen.
+
+[[sec:LF110]]
+== [[sec:LF110]] /LF110/ Quellcodeanalyse durchführen
+
+[horizontal]
+Priorität:: Muss
+Akteur:: KI
+Beschreibung:: Die KI(Google Gemeni API als Standard) verwendet einen angegebenen Kriterienkatalog (/LF20/), und Quellcode (/LF10/), um eine Quellcodeanalyse durchzuführen.

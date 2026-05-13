@@ -1,0 +1,728 @@
+[[sec:laufzeitsicht]]
+= [[sec:laufzeitsicht]] Laufzeitsicht
+
+In diesem Abschnitt werden typische Abläufe zur Laufzeit des CodeScope-Systems dargestellt. Die Sequenzdiagramme zeigen die Interaktionen zwischen den Komponenten aus dem Komponentendiagramm (<<sec:komponenten, Kapitel 3.2>>) und dem Kontextdiagramm (<<sec:kontext, Kapitel 3.1>>). Die Lifelines der Diagramme entsprechen den definierten Komponenten und externen Systemen.
+
+[[sec:LS_benutzer-login]]
+== [[sec:LS_benutzer-login]] Ablauf: Benutzer-Login (LF60/LF61)
+
+Dieser Ablauf zeigt, wie sich ein Benutzer mit seinem Google-Konto im System anmeldet.
+
+[plantuml, LS_benutzer_login, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Benutzer
+
+box "UI Layer" #LightBlue
+    participant "LoginScreen" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "LoginSteuerung" as LoginCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "AuthProvider" as Auth
+    participant "BenutzerVerwaltung" as BenutzerMgmt
+    participant "FirestoreClient" as Firestore
+    participant "GoogleAuth" as GAuthWrapper
+end box
+
+box "External Services" #LightGray
+    database "Firebase Auth" as FirebaseAuth
+    database "Firestore DB" as FirestoreDB
+end box
+
+Benutzer -> UI: Klick "Mit Google anmelden"
+activate UI
+
+UI -> LoginCtrl: login()
+activate LoginCtrl
+
+LoginCtrl -> Auth: signInWithGoogle()
+activate Auth
+
+Auth -> GAuthWrapper: getGoogleIdToken()
+activate GAuthWrapper
+GAuthWrapper --> Auth: GoogleAuthCredential
+deactivate GAuthWrapper
+
+Auth -> FirebaseAuth: signInWithCredential(credential)
+activate FirebaseAuth
+alt Authentifizierung erfolgreich
+    FirebaseAuth --> Auth: FirebaseUser
+else Authentifizierung fehlgeschlagen
+    FirebaseAuth --> Auth: Fehler
+    Auth --> LoginCtrl: Fehler
+    deactivate Auth
+    deactivate LoginCtrl
+    UI -> Benutzer: Fehlermeldung anzeigen
+    deactivate UI
+    return
+end
+deactivate FirebaseAuth
+
+note right of Auth
+Private Methode:
+updateTokenOnServer(user)
+end note
+
+Auth -> Firestore: getDocument("users/{uid}")
+activate Firestore
+Firestore -> FirestoreDB: Read
+FirestoreDB --> Firestore: Result
+Firestore --> Auth: User? (Existierend oder null)
+deactivate Firestore
+
+alt User existiert nicht (null)
+    note right of Auth: Fallback auf Rolle STUDENT
+else User existiert
+    note right of Auth: Bestehende Rolle übernehmen
+end
+
+Auth -> Firestore: setDocument("users/{uid}", user)
+activate Firestore
+Firestore -> FirestoreDB: Write / Merge
+FirestoreDB --> Firestore: Success
+Firestore --> Auth: Result<Unit>
+deactivate Firestore
+
+Auth --> LoginCtrl: Result<User>
+deactivate Auth
+
+LoginCtrl -> BenutzerMgmt: loadUser(userId)
+activate BenutzerMgmt
+
+BenutzerMgmt -> Firestore: getDocument("users/{uid}")
+activate Firestore
+Firestore -> FirestoreDB: Read
+FirestoreDB --> Firestore: User Data
+Firestore --> BenutzerMgmt: User Object
+deactivate Firestore
+
+BenutzerMgmt --> LoginCtrl: Result<User>
+deactivate BenutzerMgmt
+
+LoginCtrl --> UI: Result<User>
+deactivate LoginCtrl
+
+alt Login erfolgreich
+    UI -> Benutzer: Navigation zum Dashboard
+else Login fehlgeschlagen
+    UI -> Benutzer: Fehlermeldung anzeigen
+end
+
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Anmeldevorgang wird durch den Benutzer in der UI initiiert. Die `LoginSteuerung` delegiert den Aufruf an den `AuthProvider`. Dieser führt zunächst die technische Authentifizierung über Firebase Authentication (Google OAuth2) durch.
+
+Im selben Schritt stellt der `AuthProvider` sicher, dass ein korrespondierendes Benutzerprofil in der Firestore-Datenbank existiert:
+
+* Existiert der Benutzer noch nicht, wird er automatisch mit der Rolle `STUDENT` angelegt.
+* Existiert er bereits, werden die Basisdaten (z. B. Name, E-Mail) aktualisiert.
+
+Anschließend lädt die `LoginSteuerung` über die `BenutzerVerwaltung` das Profil aus der Datenbank, um die aktuelle Rolle zu erhalten. Abschließend routet die UI je nach Ergebnis auf das passende Dashboard.
+
+---
+
+[[sec:LS_projekt-hochladen]]
+== [[sec:LS_projekt-hochladen]] Ablauf: Projekt hochladen (LF10)
+
+Dieser Ablauf zeigt, wie ein Benutzer ein Quellcode-Projekt hochlädt.
+
+[plantuml, LS_projekt_hochladen, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Student
+
+box "UI Layer" #LightBlue
+    participant "ProjectUploadScreen" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "ProjektSteuerung" as ProjektCtrl
+    participant "ProjektStorage" as StorageLogic
+end box
+
+box "Data Layer" #F5F5F5
+    participant "FirebaseStorageClient" as StorageClient
+    participant "ProjektVerwaltung" as ProjektRepo
+    participant "FirestoreClient" as FirestoreClient
+end box
+
+box "External Services" #LightGray
+    database "Firebase Storage" as CloudStorage
+    database "Firebase Firestore" as CloudDB
+end box
+
+Student -> UI: Klick "Hochladen"
+activate UI
+
+note right of UI
+readFileBytes()
+Liest Datei in ByteArray
+end note
+
+UI -> ProjektCtrl: uploadProject(name, ownerId, zipData)
+activate ProjektCtrl
+
+note right of ProjektCtrl: 1. Validierung (Input prüfen)
+
+alt Validierung erfolgreich
+    note right of ProjektCtrl: 2. ID-Generierung (PRJ-Random)
+    ProjektCtrl -> ProjektCtrl: generiereProjektId()
+
+    note right of ProjektCtrl: 3. Binärdaten hochladen
+    ProjektCtrl -> StorageLogic: uploadProjektQuellcode(id, zipData)
+    activate StorageLogic
+
+    StorageLogic -> StorageClient: uploadFile("projects/{id}/source.zip", data)
+    activate StorageClient
+    StorageClient -> CloudStorage: putData(bytes)
+    activate CloudStorage
+    CloudStorage --> StorageClient: Success
+    deactivate CloudStorage
+    StorageClient --> StorageLogic: Result.success
+    deactivate StorageClient
+
+    StorageLogic --> ProjektCtrl: Result<storagePfad>
+    deactivate StorageLogic
+
+    note right of ProjektCtrl: 4. Metadaten speichern
+    ProjektCtrl -> ProjektRepo: save(project)
+    activate ProjektRepo
+
+    ProjektRepo -> FirestoreClient: setDocument("projects/{id}", project)
+    activate FirestoreClient
+    FirestoreClient -> CloudDB: SET Document
+    activate CloudDB
+    CloudDB --> FirestoreClient: Success
+    deactivate CloudDB
+    FirestoreClient --> ProjektRepo: Result.success
+    deactivate FirestoreClient
+
+    ProjektRepo --> ProjektCtrl: Result<Project>
+    deactivate ProjektRepo
+
+    ProjektCtrl --> UI: Result.success(project)
+    deactivate ProjektCtrl
+
+    UI -> Student: onUploadComplete() (Navigation)
+
+else Validierung oder Upload fehlgeschlagen
+    ProjektCtrl --> UI: Result.failure
+    UI -> Student: Zeige Fehlermeldung
+end
+
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Student wählt in der UI einen lokalen Projektordner oder eine ZIP-Datei aus. Die UI übergibt die Binärdaten an die `ProjektSteuerung`, welche die Validierung übernimmt.
+
+Anschließend orchestriert die `ProjektSteuerung` den Upload in zwei Schritten:
+
+1. Binärdaten werden über `ProjektStorage` (→ `FirebaseStorageClient`) in Firebase Storage hochgeladen.
+2. Erst nach erfolgreichem Upload werden die Metadaten über `ProjektVerwaltung` in Firestore gespeichert.
+
+So werden „Dangling References“ vermieden.
+
+---
+
+[[sec:LS_quellcodeanalyse-starten]]
+== [[sec:LS_quellcodeanalyse-starten]] Ablauf: Quellcodeanalyse starten (LF30/LF110)
+
+Dieser Ablauf beschreibt den Start einer Analyse über das Backend.
+
+[plantuml, LS_quellcodeanalyse_starten, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor "Student / Dozent" as User
+
+box "UI Layer" #LightBlue
+    participant "AnalysisConfigScreen" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "AnalyseSteuerung" as AnalyseCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "ProjektVerwaltung" as ProjektRepo
+    participant "RestClient" as Rest
+    participant "FirebaseFunctions" as FFClient
+end box
+
+box "External Services" #LightGray
+    participant "Cloud Function (analyseCode)" as CF
+end box
+
+User -> UI: Klick "Analyse starten"
+activate UI
+
+UI -> AnalyseCtrl: startAnalysis(projectId, catalogId, model)
+activate AnalyseCtrl
+
+note right of AnalyseCtrl: 1. Validierung & Projekt laden
+
+AnalyseCtrl -> ProjektRepo: findById(projectId)
+activate ProjektRepo
+ProjektRepo --> AnalyseCtrl: Project (Status check)
+deactivate ProjektRepo
+
+alt Projekt Status OK
+    note right of AnalyseCtrl: 2. Backend Trigger (Callable/HTTPS)
+
+    AnalyseCtrl -> Rest: requestAnalysis(projectId, catalogId, model)
+    activate Rest
+
+    Rest -> FFClient: httpsCallable("analyseCode").call(data)
+    activate FFClient
+
+    FFClient -> CF: Invoke
+    activate CF
+    note right of CF: Server lädt Storage,\nruft Gemini,\nschreibt Firestore
+    CF --> FFClient: Response { analysisId }
+    deactivate CF
+
+    FFClient --> Rest: HttpsCallableResult
+    deactivate FFClient
+
+    Rest --> AnalyseCtrl: Result.success(analysisId)
+    deactivate Rest
+
+    note right of AnalyseCtrl: 3. Lokalen Status aktualisieren
+    AnalyseCtrl -> ProjektRepo: save(project.copy(status=ANALYSIS_RUNNING))
+    activate ProjektRepo
+    ProjektRepo --> AnalyseCtrl: Result.success
+    deactivate ProjektRepo
+
+    AnalyseCtrl --> UI: Result.success(analysisId)
+    UI -> User: Snackbar "Analyse gestartet"
+
+else Fehler (z.B. Analyse läuft bereits)
+    AnalyseCtrl --> UI: Result.failure
+    UI -> User: Zeige Fehlermeldung
+end
+
+deactivate AnalyseCtrl
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Die UI stößt die Analyse an. Die `AnalyseSteuerung` prüft Voraussetzungen und verhindert parallele Starts. Danach wird per `RestClient` eine Cloud Function (`analyseCode`) aufgerufen. Nach erfolgreicher Rückgabe der `analysisId` wird der Projektstatus auf `ANALYSIS_RUNNING` gesetzt und der Erfolg an die UI gemeldet.
+
+---
+
+[[sec:LS_kurs-anlegen]]
+== [[sec:LS_kurs-anlegen]] Ablauf: Kurs anlegen (LF70)
+
+[plantuml, LS_kurs_anlegen, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Dozent
+
+box "UI Layer" #LightBlue
+    participant "CourseManagementScreen" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "DozentKursSteuerung" as DozentCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "KursVerwaltungImpl" as KursMgmt
+    participant "FirestoreClientImpl" as Firestore
+end box
+
+box "External Services" #LightGray
+    database "Firebase Firestore" as FirestoreDB
+end box
+
+Dozent -> UI: Klick "Neuer Kurs"
+activate UI
+
+UI -> DozentCtrl: createCourse(lecturerId, courseName)
+activate DozentCtrl
+
+note right of DozentCtrl: 1. Validierung (Input prüfen)
+note right of DozentCtrl: 2. ID-Generierung (COURSE-...)
+
+DozentCtrl -> DozentCtrl: generateCourseId()
+DozentCtrl -> KursMgmt: save(course)
+activate KursMgmt
+
+KursMgmt -> Firestore: setDocument("courses/{id}", course)
+activate Firestore
+Firestore -> FirestoreDB: SET Document
+activate FirestoreDB
+FirestoreDB --> Firestore: Success
+deactivate FirestoreDB
+Firestore --> KursMgmt: Result.success(Unit)
+deactivate Firestore
+
+KursMgmt --> DozentCtrl: Result.success(Unit)
+deactivate KursMgmt
+
+DozentCtrl --> UI: Result.success(course)
+deactivate DozentCtrl
+
+UI -> Dozent: Kurs in Liste anzeigen
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Dozent erstellt einen Kurs über die UI. Die `DozentKursSteuerung` generiert eine Kurs-ID, erstellt das Domain-Objekt und speichert es über `KursVerwaltung`/`FirestoreClient` in der Collection `courses`.
+
+---
+
+[[sec:LS_kurs-beitreten]]
+== [[sec:LS_kurs-beitreten]] Ablauf: Kurs beitreten (LF71)
+
+[plantuml, LS_kurs_beitreten, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Student
+
+box "UI Layer" #LightBlue
+    participant "SharedUI" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "StudentKursSteuerung" as StudentCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "KursVerwaltungImpl" as KursMgmt
+    participant "FirestoreClientImpl" as Firestore
+end box
+
+box "External Services" #LightGray
+    database "Firebase Firestore" as FirestoreDB
+end box
+
+Student -> UI: Eingabe Kurs-ID & Klick "Beitreten"
+activate UI
+
+UI -> StudentCtrl: joinCourse(courseId, studentId)
+activate StudentCtrl
+
+StudentCtrl -> KursMgmt: findById(courseId)
+activate KursMgmt
+
+KursMgmt -> Firestore: getDocument("courses/{id}")
+activate Firestore
+Firestore -> FirestoreDB: GET Document
+activate FirestoreDB
+FirestoreDB --> Firestore: DocumentSnapshot
+deactivate FirestoreDB
+Firestore --> KursMgmt: Course Object
+deactivate Firestore
+
+KursMgmt --> StudentCtrl: Result<Course>
+deactivate KursMgmt
+
+alt Kurs existiert
+    alt Student bereits Mitglied
+        note right of StudentCtrl: Idempotenz: Keine Änderung nötig
+        StudentCtrl --> UI: Success (Course)
+    else Student hinzufügen
+        StudentCtrl -> StudentCtrl: updated = course.copy(memberIds + studentId)
+        StudentCtrl -> KursMgmt: save(updated)
+        activate KursMgmt
+
+        KursMgmt -> Firestore: setDocument("courses/{id}", updated)
+        activate Firestore
+        Firestore -> FirestoreDB: SET Document
+        activate FirestoreDB
+        FirestoreDB --> Firestore: Success
+        deactivate FirestoreDB
+        Firestore --> KursMgmt: Result.success
+        deactivate Firestore
+
+        KursMgmt --> StudentCtrl: Result.success
+        deactivate KursMgmt
+
+        StudentCtrl --> UI: Result.success(updated)
+    end
+    UI -> Student: Zeige Kurs-Dashboard
+else Kurs nicht gefunden
+    StudentCtrl --> UI: Result.failure
+    UI -> Student: Zeige Fehlermeldung
+end
+
+deactivate StudentCtrl
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Student gibt eine Kurs-ID ein. Die `StudentKursSteuerung` lädt den Kurs über `findById`. Falls der Kurs existiert und der Student noch kein Mitglied ist, wird eine aktualisierte Kopie gespeichert (SET/Overwrite).
+
+---
+
+[[sec:LS_batch-analyse]]
+== [[sec:LS_batch-analyse]] Ablauf: Batch-Analyse (LF80)
+
+[plantuml, LS_batch_analyse, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Dozent
+
+box "CodeScope Client (Intern)" #LightBlue
+    participant "UI" as UI
+    participant "AnalyseSteuerung" as AnalyseCtrl
+end box
+
+box "Logic / Data Layer" #E6F2FF
+    participant "ProjektVerwaltung" as ProjektRepo
+    participant "RestClient" as Rest
+    participant "FirebaseFunctions" as FFClient
+end box
+
+box "Backend (Extern)" #LightGray
+    participant "Cloud Function (analyseCode)" as CF
+end box
+
+Dozent -> UI: Wählt Projekte & Klick "Batch Start"
+activate UI
+
+UI -> AnalyseCtrl: startBatchAnalysis(projectIds, catalogId, model)
+activate AnalyseCtrl
+
+loop Für jede projectId in projectIds
+    AnalyseCtrl -> ProjektRepo: findById(projectId)
+    activate ProjektRepo
+    ProjektRepo --> AnalyseCtrl: Project
+    deactivate ProjektRepo
+
+    alt Projekt bereit
+        AnalyseCtrl -> Rest: requestAnalysis(projectId, catalogId, model)
+        activate Rest
+        Rest -> FFClient: httpsCallable("analyseCode")
+        activate FFClient
+        FFClient -> CF: Invoke
+        activate CF
+        CF --> FFClient: { analysisId }
+        deactivate CF
+        FFClient --> Rest: Response
+        deactivate FFClient
+        Rest --> AnalyseCtrl: Result.success(analysisId)
+        deactivate Rest
+
+        AnalyseCtrl -> ProjektRepo: save(project.copy(status=ANALYSIS_RUNNING))
+        activate ProjektRepo
+        ProjektRepo --> AnalyseCtrl: Success
+        deactivate ProjektRepo
+    else Fehler
+        AnalyseCtrl --> UI: Result.failure("Batch failed for project X")
+        break
+    end
+end
+
+AnalyseCtrl --> UI: Result.success(List<analysisId>)
+deactivate AnalyseCtrl
+
+UI -> Dozent: Zeige Erfolgsmeldung
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Dozent startet mehrere Analysen nacheinander. Die `AnalyseSteuerung` iteriert über Projekt-IDs, ruft pro Projekt die Cloud Function auf und setzt den Status. Bei einem Fehler kann der Batch abbrechen.
+
+---
+
+[[sec:LS_bewertung-student-senden]]
+== [[sec:LS_bewertung-student-senden]] Ablauf: Bewertung an Studierende senden (LF31/LF90)
+
+[plantuml, LS_bewertung_senden, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor Dozent
+
+box "UI Layer" #LightBlue
+    participant "SharedUI" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "AnalyseSteuerung" as AnalyseCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "AnalyseVerwaltung" as AnalyseMgmt
+    participant "ProjektVerwaltung" as ProjektMgmt
+    participant "FirestoreClient" as Firestore
+end box
+
+box "External Services" #LightGray
+    database "Firebase Firestore" as FirestoreDB
+end box
+
+Dozent -> UI: Feedback + Klick "Freigeben"
+activate UI
+
+UI -> AnalyseCtrl: updateAnalysisResult(...)
+activate AnalyseCtrl
+
+AnalyseCtrl -> AnalyseMgmt: loadAnalysis(analyseId)
+activate AnalyseMgmt
+AnalyseMgmt -> Firestore: getDocument("analysis/{id}")
+activate Firestore
+Firestore -> FirestoreDB: READ
+activate FirestoreDB
+FirestoreDB --> Firestore: Data
+deactivate FirestoreDB
+Firestore --> AnalyseMgmt: AnalysisResult
+deactivate Firestore
+AnalyseMgmt --> AnalyseCtrl: AnalysisResult
+deactivate AnalyseMgmt
+
+AnalyseCtrl -> ProjektMgmt: findById(projectId)
+activate ProjektMgmt
+ProjektMgmt -> Firestore: getDocument("projects/{id}")
+activate Firestore
+Firestore --> ProjektMgmt: Project
+deactivate Firestore
+ProjektMgmt --> AnalyseCtrl: Project
+deactivate ProjektMgmt
+
+alt Berechtigung OK
+    AnalyseCtrl -> AnalyseCtrl: updated = analysis.copy(...)
+    AnalyseCtrl -> AnalyseMgmt: saveAnalysis(updated)
+    activate AnalyseMgmt
+
+    AnalyseMgmt -> Firestore: setDocument("analyses/{id}", updated)
+    activate Firestore
+    Firestore -> FirestoreDB: SET Document
+    activate FirestoreDB
+    FirestoreDB --> Firestore: Success
+    deactivate FirestoreDB
+    Firestore --> AnalyseMgmt: Result.success
+    deactivate Firestore
+
+    AnalyseMgmt --> AnalyseCtrl: Result.success
+    deactivate AnalyseMgmt
+
+    AnalyseCtrl --> UI: Result.success(updated)
+    UI -> Dozent: Bestätigung anzeigen
+else Keine Berechtigung
+    AnalyseCtrl --> UI: Result.failure
+    UI -> Dozent: Fehler anzeigen
+end
+
+deactivate AnalyseCtrl
+deactivate UI
+@enduml
+----
+
+*Beschreibung:*
+Der Dozent aktualisiert ein Analyseergebnis. Die `AnalyseSteuerung` lädt Analyse + Projekt zur Berechtigungsprüfung, erzeugt eine aktualisierte Kopie und speichert sie über `AnalyseVerwaltung` in Firestore.
+
+---
+
+[[sec:LS_kriterienkatalog-erstellen]]
+== [[sec:LS_kriterienkatalog-erstellen]] Ablauf: Kriterienkatalog erstellen (LF23)
+
+[plantuml, LS_kriterienkatalog_erstellen, png]
+----
+@startuml
+skinparam sequenceMessageAlign center
+skinparam boxPadding 10
+
+actor "Dozent / Admin" as User
+
+box "UI Layer" #LightBlue
+    participant "UI" as UI
+end box
+
+box "Logic Layer" #E6F2FF
+    participant "KriterienkatalogSteuerung" as KatalogCtrl
+end box
+
+box "Data Layer" #F5F5F5
+    participant "KriterienKatalogVerwaltung" as KatalogMgmt
+    participant "FirestoreClient" as Firestore
+end box
+
+box "External Services" #LightGray
+    database "Firebase Firestore" as FirestoreDB
+end box
+
+User -> UI: Klick "Speichern"
+activate UI
+
+UI -> KatalogCtrl: createCatalog(name, ownerId, criteriaText)
+activate KatalogCtrl
+
+KatalogCtrl -> KatalogCtrl: generateCatalogId()
+KatalogCtrl -> KatalogCtrl: new CriteriaCatalog(...)
+
+KatalogCtrl -> KatalogMgmt: uploadCriteriaCatalog(name, ownerId, fileData, fileName)
+activate KatalogMgmt
+
+KatalogMgmt -> Firestore: setDocument("catalogs/{id}", catalog)
+activate Firestore
+Firestore -> FirestoreDB: SET Document
+activate FirestoreDB
+FirestoreDB --> Firestore: Success
+deactivate FirestoreDB
+Firestore --> KatalogMgmt: Result.success
+deactivate Firestore
+
+KatalogMgmt --> KatalogCtrl: Result.success
+deactivate KatalogMgmt
+
+KatalogCtrl --> UI: Result.success(catalog)
+deactivate KatalogCtrl
+
+UI -> User: Bestätigung ("Katalog angelegt")
+deactivate UI
+@enduml
+
+----
+
+*Beschreibung:*
+Die `KriterienkatalogSteuerung` erstellt eine neue Katalog-ID, baut das Domain-Objekt und speichert es über `KriterienKatalogVerwaltung` in Firestore. Der eigentliche Datei-Upload findet (falls vorhanden) separat statt; hier werden nur Metadaten und Referenzen persistiert.
+
+---
+
+[[sec:LS_zusammenhang-ls]]
+== [[sec:LS_zusammenhang-ls]] Zusammenfassung der Laufzeitsicht
+
+Die dargestellten Szenarien verdeutlichen die Umsetzung einer Cloud-Native-Architektur, die stark auf entkoppelte Dienste und Firebase-Infrastruktur setzt. Wesentliche Muster:
+
+* Zweistufige Authentifizierung: technischer Login (Firebase Auth) + fachliche Rollen/Profilverwaltung (Firestore).
+* Direct-to-Cloud Upload: große Dateien werden direkt in Firebase Storage hochgeladen; Metadaten werden anschließend in Firestore gespeichert.
+* Asynchroner Analyse-Start über Cloud Functions: Analyse wird serverseitig ausgeführt, Ergebnisse werden in Firestore persistiert.
+* Batch-Verarbeitung: Mehrfachanalysen werden clientseitig iteriert angestoßen, um die Steuerung transparent zu halten.
+* Berechtigungsprüfung vor Freigabe/Änderung: Dozentenoperationen werden gegen Projekt-/Owner-Informationen validiert.
+
+Alle Komponenten kommunizieren über die in <<sec:komponenten, Kapitel 3.2>> definierten Schnittstellen und nutzen Firebase als zentralen Integrationspunkt.

@@ -1,0 +1,129 @@
+[[sec:kontext]]
+= [[sec:kontext]] Kontext
+
+In diesem Abschnitt wird das System *CodeScope* als eine einzige, unzerlegte Komponente dargestellt. Die interne Struktur des Systems wird hier bewusst nicht betrachtet. Stattdessen wird ausschließlich gezeigt, welche externen Systeme, Dienste und Akteure mit CodeScope interagieren. Betriebssysteme, Hardware, Docker-Container, Datenbankmanagementsysteme oder andere technische Laufzeitumgebungen werden – gemäß Vorgaben – nicht als eigene Komponenten dargestellt.
+
+Das System CodeScope umfasst die Desktop-Anwendung, die Android-App sowie das serverseitige Backend (Firebase Cloud Functions). Diese Teile bilden zusammen das Gesamtsystem und werden in der Kontextsicht als *eine einzelne Systemkomponente* betrachtet.
+
+=== Externe Systeme und Akteure
+
+CodeScope interagiert mit folgenden externen Systemen und Akteuren:
+
+* *Firebase Authentication*  
+  Authentifizierung der Benutzer (Google-Login) und Ausgabe gültiger ID-Tokens für authentifizierte Requests.
+
+* *Firebase Firestore*  
+  Speicherung strukturierter Daten wie Kriterienkataloge, Analyseergebnisse, Benutzerprofile (inkl. Rolleninformation) und Kursinformationen.
+
+* *Firebase Storage*  
+  Ablage hochgeladener Quellcode-Daten und Kriterienkatalog-Dateien für die Weiterverarbeitung im Analyseprozess.
+
+* *Externe KI-API (Google Gemini)*  
+  Externer Dienst, der durch das CodeScope-Backend zur Durchführung von Quellcodeanalysen aufgerufen wird.
+
+* *Optionale Git-Repository-Anbieter*  
+  Werden genutzt, wenn Studierende oder Dozenten ein Git-Repository als Analysequelle angeben (z. B. GitLab, GitHub).
+
+* *Benutzer (Akteure)*  
+  - *Student*  
+  - *Dozent*  
+  - *Administrator*  
+  Interagieren über Android- oder Desktop-Client mit CodeScope.
+
+=== Kontextdiagramm
+
+Das folgende Kontextdiagramm zeigt CodeScope als zentrale Systemkomponente im Zusammenspiel mit allen relevanten externen Systemen.
+
+[plantuml, kontextdiagramm, svg]
+[[fig:kontextdiagramm]]
+----
+@startuml
+skinparam rectangleStyle rounded
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #555555
+skinparam ActorStyle awesome
+
+actor Student
+actor Dozent
+actor Admin
+
+rectangle "CodeScope System" as CodeScope #LightBlue
+
+rectangle "Firebase Authentication" as Auth #LightGray
+rectangle "Firebase Firestore" as Firestore #LightGray
+rectangle "Firebase Storage" as Storage #LightGray
+rectangle "Google Gemini KI-API" as Gemini #LightGray
+rectangle "Git-Repository Anbieter\n(optional)" as Git #LightGray
+
+Student --> CodeScope : Nutzung
+Dozent --> CodeScope : Nutzung
+Admin --> CodeScope : Nutzung
+
+CodeScope --> Auth : Login / Tokenprüfung
+CodeScope --> Firestore : Metadaten\n(User, Kurse, Analysen)
+CodeScope --> Storage : Upload/Download\n(ZIP, TXT)
+CodeScope --> Gemini : Analyseanfragen
+CodeScope --> Git : Repository-Auslesen\n(optional)
+
+@enduml
+----
+
+=== 3.1.1 System CodeScope
+
+Beschreibung::  
+CodeScope ist das zu entwickelnde Analyse- und Bewertungssystem, das Studierenden und Dozenten ermöglicht, Softwareprojekte mithilfe einer KI automatisiert zu prüfen. Obwohl es aus Desktop- und Android-Clients sowie einem serverlosen Backend (Cloud Functions) besteht, wird es in dieser Kontextsicht als *eine Systemkomponente* betrachtet.
+
+Schnittstellen::  
+* *CodeScope_Clients* – Interaktionsebene für Benutzerzugriffe über die Android-App und die Desktop-Anwendung.  
+* *CodeScope_Backend* – Serverseitige Analysekoordination, Zugriff auf Firebase-Dienste und Anbindung an die externe KI-API.
+
+---
+
+=== 3.1.2 System Firebase Authentication
+
+Beschreibung::  
+Firebase Authentication stellt Funktionen zur Benutzeranmeldung bereit. CodeScope nutzt diesen Dienst zur Registrierung und Anmeldung per Google-Konto sowie zur Token-basierten Authentifizierung von Backend-Aufrufen.
+
+Schnittstellen::  
+* *FirebaseAuth_API* – Login, Tokenvalidierung, Session-Management.
+
+---
+
+=== 3.1.3 System Firebase Firestore
+
+Beschreibung::  
+Firebase Firestore ist eine externe NoSQL-Datenbank, die von CodeScope verwendet wird, um Benutzerprofile (inkl. Rollen), Kriterienkatalog-Metadaten, Analyseergebnisse und Kursdaten persistent zu speichern.
+
+Schnittstellen::  
+* *Firestore_API* – Lesen, Schreiben und Aktualisieren strukturierter Daten.
+
+---
+
+=== 3.1.4 System Firebase Storage
+
+Beschreibung::  
+Firebase Storage wird genutzt, um hochgeladene Quellcode-Projekte (ZIP) sowie Kriterienkatalogdateien (TXT) abzulegen. Diese Dateien werden im Analyseprozess durch das CodeScope-Backend weiterverarbeitet.
+
+Schnittstellen::  
+* *Storage_API* – Datei-Uploads, Downloads und Zugriff über Storage-Referenzen.
+
+---
+
+=== 3.1.5 System Google Gemini KI-API
+
+Beschreibung::  
+Die Google Gemini API wird vom CodeScope-Backend aufgerufen, um Quellcode mit Hilfe eines Large Language Models zu analysieren. Sie liefert Bewertungen, Vorschläge und Analyseergebnisse zurück.
+
+Schnittstellen::  
+* *Gemini_API* – Einsenden von Analyseaufträgen und Empfang KI-basierter Rückgabedaten.
+
+---
+
+=== 3.1.6 System Git-Repository-Anbieter (optional)
+
+Beschreibung::  
+Externe Git-Anbieter wie GitLab oder GitHub werden genutzt, wenn Benutzer Quellcode nicht lokal hochladen, sondern aus einem Repository einbinden möchten.
+
+Schnittstellen::  
+* *Git_API* – Abruf öffentlich zugänglicher oder durch Benutzer autorisierter Repository-Inhalte.
