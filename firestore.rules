@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+	// =========================================================
+    // 1. HILFSFUNKTIONEN
+    // =========================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Prüft, ob der Nutzer aktiv ist (Standard: true, falls Feld fehlt)
+    function isActive() {
+      return isSignedIn() && userExists() && 
+             (!('isActive' in getUserData()) || getUserData().isActive == true);
+    }
+
+    function isOwner(userId) {
+      return isActive() && request.auth.uid == userId;
+    }
+
+    function hasRole(role) {
+      return isActive() && getUserData().role == role;
+    }
+
+    function isLecturer() { return hasRole('LECTURER'); }
+    function isAdmin() { return hasRole('ADMIN'); }
+    function isStaff() { return isLecturer() || isAdmin(); }
+
+    // =========================================================
+    // 2. REGELWERK
+    // =========================================================
+
+    match /users/{userId} {
+      // Auch deaktivierte Nutzer müssen ihr eigenes Profil lesen können, 
+      // um den Status "Deaktiviert" in der App anzuzeigen.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      
+      // Update erlaubt wenn:
+      // 1. Besitzer ist aktiv UND ändert Rolle/Status nicht selbst
+      // 2. ODER Admin führt Update durch
+      allow update: if (isOwner(userId) 
+                        && request.resource.data.role == resource.data.role
+                        && request.resource.data.isActive == resource.data.isActive) 
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if isActive();
+      allow create, delete: if isStaff();
+      allow update: if isStaff() || 
+                    (isActive() && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+                    );
+    }
+
+    match /projects/{projectId} {
+      allow read: if isActive() && (resource.data.ownerId == request.auth.uid || isStaff());
+      allow create: if isActive() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isActive() && (resource.data.ownerId == request.auth.uid || isStaff());
+    }
+
+    match /analysis/{analysisId} {
+      allow read: if isActive() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff() || (isActive() && resource.data.userId == request.auth.uid);
+      allow delete: if isStaff() || (isActive() && resource.data.userId == request.auth.uid);
+    }
+
+    match /Catalogs/{catalogId} {
+      allow read: if isActive();
+      allow create: if isActive();
+      allow update, delete: if isStaff() || (isActive() && resource.data.ownerId == request.auth.uid);
+    }
+  }
+}

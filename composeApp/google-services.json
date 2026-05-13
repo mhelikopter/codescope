@@ -1,0 +1,71 @@
+{
+  "project_info": {
+    "project_number": "916282029448",
+    "project_id": "codescope-df36a",
+    "storage_bucket": "codescope-df36a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:916282029448:android:cee8ab7f59a7980be2b63d",
+        "android_client_info": {
+          "package_name": "de.thkoeln.codescope"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "916282029448-2sqq2c2mec9ottl755n3sah9sos7p9bi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.thkoeln.codescope",
+            "certificate_hash": "259f33d806c898daa358f86c23a68f9dbe169af4"
+          }
+        },
+        {
+          "client_id": "916282029448-f24tcp5vh78327mic5uv41s0ucpp45g5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.thkoeln.codescope",
+            "certificate_hash": "0b79f4b00e020eec9988996d361dcd576232f68a"
+          }
+        },
+        {
+          "client_id": "916282029448-jb34hvmcm4jg4lstbg687p6vc540ahmu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.thkoeln.codescope",
+            "certificate_hash": "f37b685b61b3b29b018932cf2d6ffc3f68b1723c"
+          }
+        },
+        {
+          "client_id": "916282029448-ng8h9jn1ue985ml520stjrvfs1v2t6mj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.thkoeln.codescope",
+            "certificate_hash": "a9c9e846d76932e16b915897e02304ee22133c60"
+          }
+        },
+        {
+          "client_id": "916282029448-2775rh6vqj6g1gbfeml11fsfnl41s83a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP4atAE_NOaYfH8_4YSCt3R9684EpKDy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "916282029448-2775rh6vqj6g1gbfeml11fsfnl41s83a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

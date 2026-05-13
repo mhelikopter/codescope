@@ -1,0 +1,40 @@
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+/Organisation/
+
+# Build artifacts / stray logs
+build_*.txt
+*.log
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.firebase/
+
+# OS / editor
+*~
+.vscode/
+
+# Functions build output
+functions/lib/
+
+# Local dev / sandbox scripts (must never carry hardcoded keys)
+functions/test-local.*
+**/*.local.js
+**/*.local.ts

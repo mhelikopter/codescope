@@ -1,0 +1,101 @@
+# Continuous integration for CodeScope (Kotlin Multiplatform + Firebase Functions).
+#
+# Two independent jobs run in parallel:
+#   1. gradle-build:           Android + JVM (Compose Desktop) build + KMP tests
+#   2. functions-lint-and-build: TypeScript Firebase Functions compile
+#
+# Both jobs use Linux runners. The Android build needs the Android SDK installed
+# explicitly (setup-java only handles the JDK).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Least-privilege: workflow only needs to read repo contents.
+permissions:
+  contents: read
+
+jobs:
+  gradle-build:
+    name: Gradle build (Android + JVM)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Installs the Android SDK + command-line tools onto the runner.
+      # setup-java does not do this; the Android Gradle Plugin would otherwise fail.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # v4 of setup-gradle handles dependency + wrapper caching natively.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The BuildKonfig plugin reads keys from local.properties at configuration
+      # time, and the Android plugin needs sdk.dir. Real secrets are not required
+      # for a CI compile, so we write placeholders. ANDROID_HOME is exported by
+      # the setup-android action above.
+      - name: Create stub local.properties
+        run: |
+          cat > local.properties <<EOF
+          sdk.dir=${ANDROID_HOME}
+          CODE_SCOPE_DESKTOP_CLIENT_ID=ci-placeholder
+          CODE_SCOPE_DESKTOP_CLIENT_SECRET=ci-placeholder
+          CODE_SCOPE_FIREBASE_API_KEY=ci-placeholder
+          CODE_SCOPE_FIREBASE_PROJECT_ID=ci-placeholder
+          CODE_SCOPE_FIREBASE_STORAGE_BUCKET=ci-placeholder
+          FIREBASE_FUNCTIONS_REGION=europe-west3
+          EOF
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Assemble Android debug
+        run: ./gradlew :composeApp:assembleDebug --no-daemon
+
+      - name: Build JVM (Compose Desktop) jar
+        run: ./gradlew :composeApp:jvmJar --no-daemon
+
+      # KMP aggregate task: runs Android unit tests + JVM tests + any common
+      # multiplatform test targets. If no tests are defined yet, it succeeds
+      # as a no-op.
+      - name: Run all KMP tests
+        run: ./gradlew :composeApp:allTests --no-daemon
+
+  functions-lint-and-build:
+    name: Firebase Functions (TypeScript build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 20 matches the "engines" field in functions/package.json and the
+      # Firebase Functions runtime target.
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Compile TypeScript
+        run: npm run build

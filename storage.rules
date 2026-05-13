@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+
+
+    // Helper Funktion: Nutzer eingeloggt?
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+		// --- Kriterienkataloge ---
+    match /Catalogs/{userId}/{fileName} {
+      // Lesen: Jeder
+      allow read: if isSignedIn();
+
+      // Schreiben: Erlaubt, wenn man eingeloggt ist
+      // (Optional: && request.auth.uid == userId)
+      allow write: if isSignedIn();
+    }
+
+
+    // --- PROJEKT-QUELLCODE ---
+    // Pfad: projects/{projectId}/source.zip
+    match /projects/{projectId}/{fileName} {
+
+      // LESEN (Download): Erlaubt für jeden eingeloggten Nutzer.
+      // (Sicherheit erfolgt durch Geheimhaltung der projectId via Firestore)
+      allow read: if isSignedIn();
+
+      // SCHREIBEN (Upload): Erlaubt, wenn eingeloggt UND...
+      // 1. Datei kleiner als 100 MB ist (Quota-Schutz)
+      // 2. (Optional) Es eine ZIP-Datei ist (oder der Content-Type leer ist)
+      allow write: if isSignedIn()
+                   && request.resource.size < 100 * 1024 * 1024; // Max 100 MB
+    }
+
+    // --- STANDARD REGEL FÜR ALLES ANDERE ---
+    // Verbietet Zugriff auf alle anderen Pfade
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
